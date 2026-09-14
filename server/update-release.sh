@@ -98,7 +98,11 @@ actual=$(curl -fsS --max-time 10 "http://127.0.0.1:$port/version.json" | python3
 [[ "$actual" == "$revision" ]]
 curl -fsS --max-time 10 "http://127.0.0.1:$port/" -D "$work/candidate.headers" -o "$work/candidate.html"
 test -s "$work/candidate.html"
-grep -Eiq '^x-robots-tag:.*noindex' "$work/candidate.headers"
+grep -Eiq '^x-robots-tag: *index, *follow' "$work/candidate.headers"
+if grep -Eiq '^x-robots-tag:.*(noindex|nofollow|none)' "$work/candidate.headers"; then
+  echo 'Candidate has conflicting search-indexing headers; keeping the existing website.' >&2
+  exit 1
+fi
 docker rm -f -v "$candidate" >/dev/null
 [[ "$revision" == "$(current_main)" ]] || { echo 'A newer main commit arrived; keeping the existing demo.'; exit 0; }
 if [[ -f "$root/compose.yaml" && -f "$root/release.env" ]]; then
@@ -130,7 +134,8 @@ for attempt in $(seq 1 30); do
   if [[ "$actual" == "$revision" ]] \
     && curl -fsS --max-time 10 --resolve demo.xsolutionsmd.com:443:127.0.0.1 https://demo.xsolutionsmd.com/ -D "$work/live.headers" -o "$work/live.html" \
     && cmp -s "$work/candidate.html" "$work/live.html" \
-    && grep -Eiq '^x-robots-tag:.*noindex' "$work/live.headers"; then verified=true; break; fi
+    && grep -Eiq '^x-robots-tag: *index, *follow' "$work/live.headers" \
+    && ! grep -Eiq '^x-robots-tag:.*(noindex|nofollow|none)' "$work/live.headers"; then verified=true; break; fi
   sleep 2
 done
 [[ "$verified" == true ]]

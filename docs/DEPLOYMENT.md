@@ -2,11 +2,11 @@
 
 ## Release process
 
-1. Develop and check on `dev` with `website.ps1 check -NoOpen`. Local start, dev and update commands continue to use port 4177 and never deploy to Oracle.
-2. Push `dev`; **Check website container** runs and deployment is skipped. Open a PR from `dev` into `main`.
+1. Develop the static site on `updates`, based on current `main`, and check with `website.ps1 check -NoOpen` and `node scripts/check-seo.cjs`. Local start, dev and update commands continue to use port 4177 and never deploy to Oracle. The separate `dev` branch contains the booking/admin application and is not the source of this release.
+2. Push `updates`; **Check website container** runs and deployment is skipped. Open a PR from `updates` into `main`.
 3. After the required check and release authorization, merge the PR. GitHub builds AMD64/ARM64 images, publishes `ghcr.io/derek-sykes/dylans-lawn-care-demo:sha-<commit>` and attaches `deployment.json` to `release-<commit>`.
 4. Oracle's timer checks current main about once a minute. It accepts only this repository's exact image digest and matching revision, verifies ARM64/source labels, and runs a candidate on an isolated random loopback port.
-5. The updater replaces only the `dylan-demo` website service and verifies the expected revision, HTML equality and noindex header through HTTPS at `demo.xsolutionsmd.com`. GitHub independently verifies the same address against the expected Oracle IP before reporting success.
+5. The updater replaces only the `dylan-demo` website service and verifies the expected revision, HTML equality and indexable response through HTTPS at `demo.xsolutionsmd.com`. GitHub independently verifies the same address against the expected Oracle IP before reporting success. Conflicting `noindex`/`nofollow` headers fail verification and trigger recovery.
 
 The release job also runs for a manual workflow dispatch on `main`. It never merges branches. Superseded main releases are skipped; a main commit whose release is still building leaves the previous site in service. Builds happen on GitHub, so the developer's computer can be off. No GitHub token, SSH credential or runner is installed on Oracle; package and release downloads are public.
 
@@ -49,7 +49,7 @@ Successful upgrades save recovery files as `/var/lib/dylan-demo-deploy/previous-
 
 ## Validation record
 
-Implementation and local checks are recorded here before release. Live release results are added only after Oracle and Actions have verified them. This public demonstration retains its existing noindex controls; it does not establish final owner approval or delivery of a paid client website.
+The September 14 static-site SEO release replaces main's previous noindex policy with an indexable page. See [SEO implementation and validation](SEO.md). The installed root-owned updater must be updated from the reviewed source before the first indexable image release; publishing an image does not reinstall that script. The separate dev application's policy is unchanged. The historical September 10 records below describe the noindex configuration at that time.
 
 September 10, 2026 implementation checks, based on source revision `d4d327b47517b028c245291e6a5da78cbd83ee0d` with the deployment changes applied:
 

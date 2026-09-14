@@ -68,7 +68,15 @@ function Test-Image {
     }
     if (-not $ready) { throw 'The candidate container did not become ready.' }
     $index = Invoke-WebRequest "$baseUrl/" -UseBasicParsing -TimeoutSec 10
-    if ($index.Headers['X-Robots-Tag'] -notmatch 'noindex') { throw 'Demo indexing protection is missing.' }
+    if ($index.Headers['X-Robots-Tag'] -notmatch '^index,\s*follow$') { throw 'The public site must allow search indexing.' }
+    if ($index.Headers['Cache-Control'] -notmatch 'must-revalidate') { throw 'HTML must revalidate so new releases are visible.' }
+    $robots = Invoke-WebRequest "$baseUrl/robots.txt" -UseBasicParsing -TimeoutSec 10
+    if ($robots.Content -notmatch 'Sitemap: https://demo.xsolutionsmd.com/sitemap.xml' -or $robots.Content -match '(?m)^Disallow:\s*/\s*$') { throw 'Search crawling or sitemap discovery is blocked.' }
+    $sitemap = Invoke-WebRequest "$baseUrl/sitemap.xml" -UseBasicParsing -TimeoutSec 10
+    if ($sitemap.Content -notmatch '<loc>https://demo.xsolutionsmd.com/</loc>' -or $sitemap.Headers['Content-Type'] -notmatch 'xml') { throw 'The XML sitemap is invalid.' }
+    $asset = Get-ChildItem -LiteralPath 'dist/assets' -Filter '*.webp' | Select-Object -First 1
+    $assetResponse = Invoke-WebRequest "$baseUrl/assets/$($asset.Name)" -UseBasicParsing -TimeoutSec 10
+    if ($assetResponse.Headers['Cache-Control'] -notmatch 'immutable' -or $assetResponse.Headers['Content-Type'] -notmatch 'image/webp') { throw 'Fingerprint asset caching or WebP delivery is missing.' }
     $version = Invoke-RestMethod "$baseUrl/version.json" -TimeoutSec 10
     if ($version.revision -ne $env:DYLAN_REVISION) { throw 'The packaged source revision does not match the build.' }
     $publicRoot = (Resolve-Path -LiteralPath 'dist').Path
@@ -85,7 +93,7 @@ function Test-Image {
       catch { if ($_.Exception.Response) { $status = [int]$_.Exception.Response.StatusCode } else { throw } }
       if ($status -ne 404) { throw "Unexpected public access to $privatePath ($status)." }
     }
-    Write-Host "Container checks passed: $($files.Count) public files match; revision, health, demo headers and private-file exclusions verified."
+    Write-Host "Container checks passed: $($files.Count) public files match; revision, health, SEO, caching and private-file exclusions verified."
   } finally {
     if ($started) { & docker rm --force $checkName | Out-Null }
     if (Test-Path -LiteralPath $download) { Remove-Item -LiteralPath $download -Force }
@@ -104,7 +112,7 @@ function Update-Source {
   if (-not (Get-Command git -ErrorAction SilentlyContinue)) { throw 'Git is required for update.' }
   if (-not (Test-Path -LiteralPath '.git')) { throw 'This folder is not a Git clone. Use start for the local demo.' }
   $branch = & git branch --show-current
-  if ($LASTEXITCODE -ne 0 -or $branch -notin @('dev','main')) { throw 'Update follows the current dev or main branch. Switch to dev before updating.' }
+  if ($LASTEXITCODE -ne 0 -or $branch -notin @('dev','updates','main')) { throw 'Update follows the current dev, updates or main branch. Switch to the intended branch before updating.' }
   $dirty = & git status --porcelain --untracked-files=all
   if ($LASTEXITCODE -ne 0) { throw 'Could not inspect Git changes.' }
   if ($dirty) { throw 'Commit or stash your local changes before update. No files were overwritten.' }
@@ -128,7 +136,7 @@ try {
   if ($Command -eq 'help') {
     Write-Host 'Usage: .\website.ps1 start|dev|build|check|update|stop|status|logs|open [-NoOpen]'
     Write-Host 'start builds and checks the packaged demo. dev mounts dist for immediate edit/refresh.'
-    Write-Host 'update safely pulls the current dev/main branch, then builds, checks and starts locally.'
+    Write-Host 'update safely pulls the current dev/updates/main branch, then builds, checks and starts locally.'
   } elseif ($Command -eq 'open') { Show-Site }
   else {
     Assert-Docker
