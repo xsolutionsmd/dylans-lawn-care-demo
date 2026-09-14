@@ -223,6 +223,8 @@ html:not(.motion-enabled) *,html:not(.motion-enabled) *:before,html:not(.motion-
 .motion-paused .button:hover,.motion-paused .button:hover>span,.motion-paused .back-top:hover span,.motion-paused .reel-buttons button:hover{transform:none}
 @media(prefers-reduced-motion:reduce){.button:hover,.button:hover>span,.back-top:hover span,.reel-buttons button:hover{transform:none}}
 /* The FAQ illustration grows from, and folds back into, the sentence's period. */
+/* Suspend invisible loops without discarding their progress or changing keyframes. */
+.is-motion-idle,.is-motion-idle *{animation-play-state:paused!important}
 .faq-punctuation{position:relative;display:inline-block;width:1.15em;letter-spacing:0;isolation:isolate}
 .faq-period{display:inline-block;transform-origin:50% 83%;animation:faq-period-morph 7.6s cubic-bezier(.4,0,.2,1) infinite both}
 .faq-lawn{position:absolute;left:.035em;bottom:.14em;width:1.12em;height:.448em;margin:0;font-size:inherit;opacity:0;transform-origin:8% 83%;animation:faq-lawn-morph 7.6s cubic-bezier(.4,0,.2,1) infinite both;pointer-events:none}

@@ -21,7 +21,9 @@ jobs:
         shell: pwsh
         run: ./website.ps1 check -NoOpen
       - name: Verify SEO and static-site integrity
-        run: node scripts/check-seo.cjs
+        run: |
+          node --check dist/app.js
+          node scripts/check-seo.cjs
       - name: Verify deployment recovery and indexing checks
         run: python3 scripts/test-updater.py
   release:
