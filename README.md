@@ -33,12 +33,12 @@ The website is static: there are no accounts, database, uploaded leads, stored m
 
 ## Git and a second computer
 
-Develop on `dev` or a focused feature branch targeting `dev`. Review and commit changes, then push to this repository. On a second computer, clone its **dev** branch, start Docker Desktop and run `start.bat`. Use `update.bat` thereafter.
+The static website follows **updates → main**. Create `updates` from current `main`, make and test focused changes there, and open a PR into `main` when a release is authorized. The separate **dev** branch contains the booking/admin system; do not merge it to release static-site updates. On a second computer, clone **updates** to work on this version, start Docker Desktop and run `start.bat`. Use `update.bat` thereafter.
 
 The public repository is [Derek-Sykes/dylans-lawn-care-demo](https://github.com/Derek-Sykes/dylans-lawn-care-demo), with `dev` as its default branch. Cloning does not require a GitHub sign-in; pushing changes requires write access. Clone once:
 
 ```powershell
-git clone --branch dev https://github.com/Derek-Sykes/dylans-lawn-care-demo.git
+git clone --branch updates https://github.com/Derek-Sykes/dylans-lawn-care-demo.git
 cd dylans-lawn-care-demo
 .\start.bat
 ```
@@ -63,7 +63,7 @@ Aim for 60–90 seconds. Present this as a demonstration for Dylan's review. Con
 
 ## Public demonstration and final client launch
 
-The September 10 request authorizes publishing this demonstration at `demo.xsolutionsmd.com` on the existing Oracle server and setting up automatic main releases. It supersedes the earlier local-only deployment boundary for this demo. It does not establish owner acceptance, a purchased client domain or a final business launch. Existing noindex controls and the requested presentation remain in place; noindex discourages indexing but does not restrict who can open the address.
+The September 14 SEO release uses `updates`, branched from main, and preserves the static site's visible presentation. The public site at `demo.xsolutionsmd.com` allows search indexing; this supersedes the earlier main noindex configuration. The separate dev booking environment retains its indexing protection and independent release process. A main release still requires authorization and passing PR checks. See [SEO implementation and validation](docs/SEO.md), including the steps required if the public domain changes.
 
 The static image uses HTTP on internal port 8080. `compose.local.yaml` binds that port only to the local computer. `compose.production.yaml` publishes no host ports: the shared Caddy proxy sends `demo.xsolutionsmd.com` requests over the external `xsolutions-proxy` network to `dylan-demo:8080`. Releases support AMD64 and ARM64, and Oracle verifies the ARM64 image. Certificates and the company website belong to separate stacks. See [deployment operations](docs/DEPLOYMENT.md).
 

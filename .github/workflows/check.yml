@@ -1,7 +1,7 @@
 name: Website checks and deployment
 on:
   push:
-    branches: [dev, main]
+    branches: [dev, updates, main]
   pull_request:
     branches: [dev, main]
   workflow_dispatch:
@@ -20,6 +20,10 @@ jobs:
       - name: Build and verify the packaged website
         shell: pwsh
         run: ./website.ps1 check -NoOpen
+      - name: Verify SEO and static-site integrity
+        run: node scripts/check-seo.cjs
+      - name: Verify deployment recovery and indexing checks
+        run: python3 scripts/test-updater.py
   release:
     name: Publish and deploy to Oracle
     needs: container
@@ -94,7 +98,11 @@ jobs:
               curl -fsS --max-time 10 --resolve "demo.xsolutionsmd.com:443:$ORACLE_HOST" \
                 https://demo.xsolutionsmd.com/ -D live.headers -o live.html
               cmp live.html dist/index.html
-              grep -Eiq '^x-robots-tag:.*noindex' live.headers
+              grep -Eiq '^x-robots-tag: *index, *follow' live.headers
+              if grep -Eiq '^x-robots-tag:.*(noindex|nofollow|none)' live.headers; then
+                echo 'The live website has conflicting indexing headers.' >&2
+                exit 1
+              fi
               echo "Verified Oracle serves $EXPECTED over HTTPS."
               echo "Deployed **$EXPECTED** to https://demo.xsolutionsmd.com" >> "$GITHUB_STEP_SUMMARY"
               exit 0

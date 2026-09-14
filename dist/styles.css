@@ -11,7 +11,7 @@
 .hero-copy{padding-block:0}
 .headline-word{white-space:nowrap}
 .hero h1 .headline-lawn{position:relative;display:inline-block;width:1.1em;height:.44em;margin-left:.025em;vertical-align:-.075em;isolation:isolate}
-.headline-lawn>span{position:absolute;inset:0;background:url('assets/headline-lawn-color.png') center / 100% 100% no-repeat;-webkit-mask:url('assets/headline-lawn.png') center / 100% 100% no-repeat;mask:url('assets/headline-lawn.png') center / 100% 100% no-repeat;animation-duration:7.6s;animation-timing-function:cubic-bezier(.25,.65,.3,1);animation-iteration-count:infinite;animation-fill-mode:both;pointer-events:none}
+.headline-lawn>span{position:absolute;inset:0;background:url('assets/headline-lawn-color.e65648983736.webp') center / 100% 100% no-repeat;-webkit-mask:url('assets/headline-lawn.99fbdf7de3db.webp') center / 100% 100% no-repeat;mask:url('assets/headline-lawn.99fbdf7de3db.webp') center / 100% 100% no-repeat;animation-duration:7.6s;animation-timing-function:cubic-bezier(.25,.65,.3,1);animation-iteration-count:infinite;animation-fill-mode:both;pointer-events:none}
 .lawn-grass{clip-path:polygon(0 0,28% 0,28% 58%,34% 76%,34% 83%,36% 83%,36% 76%,44% 61%,44% 0,56.5% 0,56.5% 100%,0 100%);transform-origin:35% 83%;animation-name:lawn-unfurl}
 .lawn-flower{clip-path:polygon(28% 0,44% 0,44% 61%,36% 76%,36% 83%,34% 83%,34% 76%,28% 58%);transform-origin:35% 83%;animation-name:flower-grow}
 .lawn-mower{clip-path:inset(0 0 0 56.5%);transform-origin:76% 83%;animation-name:mower-arrive}
