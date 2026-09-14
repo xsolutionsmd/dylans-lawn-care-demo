@@ -1,6 +1,6 @@
 # Dylan's Lawn Care — website demo
 
-A standalone static website with a local Docker preview and an authorized demonstration address at **https://demo.xsolutionsmd.com**. Public website files live in `dist/`. Develop on `dev`; an authorized merge into `main` checks, publishes and deploys the demo to Oracle. The company website keeps its own container at xsolutionsmd.com. This repository contains no server credentials, domain automation or quote submission backend.
+A standalone static website with a local Docker preview and an authorized demonstration address at **https://demo.xsolutionsmd.com**. Public website files live in `dist/`. Develop this version on `updates`; an authorized merge into `main` checks, publishes and deploys the demo to Oracle. The separate `dev` branch contains the booking/admin application. The company website keeps its own container at xsolutionsmd.com. This version contains no server credentials, domain automation or quote submission backend.
 
 ## Start the demo
 
@@ -31,6 +31,8 @@ Use **start.bat** before recording or acceptance review. It packages the files i
 
 The website is static: there are no accounts, database, uploaded leads, stored messages or tool-login volumes to preserve. Contact links open the business's verified contact destinations. They do not establish message delivery or a booked appointment. Keep personal notes and asset approval records in the parent client folder, outside this repository and image.
 
+See [animation performance](docs/PERFORMANCE.md) for the scroll cache, carousel scheduling, offscreen animation handling and browser acceptance checks. The original visual effects and image quality are preserved.
+
 ## Git and a second computer
 
 The static website follows **updates → main**. Create `updates` from current `main`, make and test focused changes there, and open a PR into `main` when a release is authorized. The separate **dev** branch contains the booking/admin system; do not merge it to release static-site updates. On a second computer, clone **updates** to work on this version, start Docker Desktop and run `start.bat`. Use `update.bat` thereafter.
@@ -45,9 +47,9 @@ cd dylans-lawn-care-demo
 
 The GitHub **Website checks and deployment** workflow also has a **Run workflow** button. A run on `dev` checks only; a run on `main` also publishes and verifies the current main release. Read [deployment and validation](docs/DEPLOYMENT.md) for requirements and actual verification status.
 
-The updater follows the current `dev` or `main` branch. It refuses uncommitted/untracked work, feature branches, and history that cannot safely advance to the remote. It fetches and fast-forwards, builds and verifies a candidate, then replaces this local container. A failed build leaves the prior packaged container running; source may already have advanced. It never force-resets Git or removes unrelated Docker resources. In dev mode, edits are visible immediately because its source is mounted.
+The updater follows the current `dev`, `updates` or `main` branch. It refuses uncommitted/untracked work, other branches, and history that cannot safely advance to the remote. It fetches and fast-forwards, builds and verifies a candidate, then replaces this local container. A failed build leaves the prior packaged container running; source may already have advanced. It never force-resets Git or removes unrelated Docker resources. In dev mode, edits are visible immediately because its source is mounted.
 
-The included GitHub check builds the container, verifies the exact files and source revision, tests health and demo indexing headers, and checks private files are inaccessible. That check has read-only repository permission. Only the separate main release job can publish an image and release manifest. Continue development on `dev`; open a PR with base `main`, wait for **Check website container**, and merge when release is authorized. The initial public demo setup is authorized; it is not standing permission for every future main merge. Repository protection settings must be configured/verified separately; files alone do not enforce them.
+The included GitHub check builds the container, verifies the exact files and source revision, tests health and demo indexing headers, and checks private files are inaccessible. That check has read-only repository permission. Only the separate main release job can publish an image and release manifest. Continue static-site development on `updates`; open a PR with base `main`, wait for **Check website container**, and merge when release is authorized. The initial public demo setup is authorized; it is not standing permission for every future main merge. Repository protection settings must be configured/verified separately; files alone do not enforce them.
 
 `/version.json` reports the packaged commit, with `-dirty` for a checkout containing uncommitted changes. In dev mode, this identifies the base build; live mounted edits can be newer. Read the parent client's QA record for the actual tested revision and visual checks.
 

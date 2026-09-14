@@ -22,6 +22,13 @@ document.querySelectorAll('.section-heading>p,.review-summary,.faq-list').forEac
 const reveals = document.querySelectorAll('.reveal');
 const scrollReveals = [...reveals].map(element => ({ element, trigger: element }));
 scrollReveals.push({ element: document.querySelector('.hero-scenes'), trigger: document.querySelector('.hero-photo') });
+const header = document.querySelector('.header');
+const mobileContact = document.querySelector('.mobile-contact');
+const canObserveLayout = 'ResizeObserver' in window;
+let revealGeometry = [];
+let geometryDirty = true;
+let headerHeight = 0;
+let mobileContactHeight = 0;
 let revealFrame = 0;
 let userPausedMotion = false;
 const motionIsPaused = () => userPausedMotion || motionPreference.matches;
@@ -58,6 +65,8 @@ let reelVisible = false;
 let pointerOverReel = false;
 let rotationTimer;
 let gesture = null;
+let dragFrame = 0;
+let dragOffset = 0;
 
 function updateRotation() {
   clearTimeout(rotationTimer);
@@ -74,21 +83,28 @@ function updateRotation() {
 function showProject(index, manual = false) {
   currentProject = (index + cards.length) % cards.length;
   if (manual) reelPaused = true;
-  cards.forEach((card, i) => {
+  const positions = cards.map((card, i) => {
     let offset = (i - currentProject + cards.length) % cards.length;
     if (offset > cards.length / 2) offset -= cards.length;
     const distance = Math.abs(offset);
     const previousOffset = Number(card.dataset.position);
     // Reposition hidden cards behind the reel, never across the visible center.
     if (distance > 1 && Math.abs(previousOffset) === 1) offset = previousOffset * 2;
-    if (distance <= 1 && (Math.abs(previousOffset) > 1 || previousOffset * offset < 0)) {
+    const reposition = distance <= 1 && (Math.abs(previousOffset) > 1 || previousOffset * offset < 0);
+    return { card, i, offset, distance, reposition };
+  });
+  // Establish all hidden starting positions in one layout pass before animating.
+  positions.forEach(({ card, offset, reposition }) => {
+    if (reposition) {
       card.style.transition = 'none';
       card.style.setProperty('--offset', offset * 2);
       card.style.setProperty('--distance', 2);
       card.style.setProperty('--card-opacity', 0);
-      card.getBoundingClientRect();
-      card.style.transition = '';
     }
+  });
+  if (positions.some(({ reposition }) => reposition)) stage.getBoundingClientRect();
+  positions.forEach(({ card, i, offset, distance, reposition }) => {
+    if (reposition) card.style.transition = '';
     card.style.setProperty('--offset', offset);
     card.style.setProperty('--distance', distance);
     card.style.setProperty('--card-opacity', distance > 1 ? 0 : 1);
@@ -126,6 +142,13 @@ reel.addEventListener('pointerleave', event => {
 });
 
 // Native vertical scrolling stays available while horizontal drags move the reel.
+function resetDrag() {
+  cancelAnimationFrame(dragFrame);
+  dragFrame = 0;
+  stage.classList.remove('is-dragging');
+  stage.style.setProperty('--drag', '0px');
+}
+
 stage.addEventListener('pointerdown', event => {
   if (!event.isPrimary || event.button !== 0) return;
   gesture = { id: event.pointerId, x: event.clientX, y: event.clientY, horizontal: false };
@@ -140,15 +163,20 @@ stage.addEventListener('pointermove', event => {
     gesture.horizontal = true;
     stage.classList.add('is-dragging');
   }
-  if (gesture.horizontal) stage.style.setProperty('--drag', `${Math.max(-150, Math.min(150, dx * .45))}px`);
+  if (gesture.horizontal) {
+    dragOffset = Math.max(-150, Math.min(150, dx * .45));
+    if (!dragFrame) dragFrame = requestAnimationFrame(() => {
+      dragFrame = 0;
+      stage.style.setProperty('--drag', `${dragOffset}px`);
+    });
+  }
 });
 function finishGesture(event) {
   if (!gesture || event.pointerId !== gesture.id) return;
   const dx = event.clientX - gesture.x;
   const swipe = event.type === 'pointerup' && gesture.horizontal && Math.abs(dx) > 40;
   gesture = null;
-  stage.classList.remove('is-dragging');
-  stage.style.setProperty('--drag', '0px');
+  resetDrag();
   if (stage.hasPointerCapture(event.pointerId)) stage.releasePointerCapture(event.pointerId);
   if (swipe) showProject(currentProject + (dx < 0 ? 1 : -1), true);
   else updateRotation();
@@ -156,10 +184,27 @@ function finishGesture(event) {
 stage.addEventListener('pointerup', finishGesture);
 stage.addEventListener('pointercancel', finishGesture);
 stage.addEventListener('lostpointercapture', event => {
-  if (gesture && gesture.id === event.pointerId) { gesture = null; stage.classList.remove('is-dragging'); stage.style.setProperty('--drag', '0px'); updateRotation(); }
+  if (gesture && gesture.id === event.pointerId) { gesture = null; resetDrag(); updateRotation(); }
 });
 
+// Keep each illustration's synchronized layers together. Offscreen/hidden loops
+// retain their progress, so returning to a heading resumes the same animation.
+const decorativeMotion = [...document.querySelectorAll('.hero .headline-lawn,.faq-punctuation')]
+  .map(element => ({ element, trigger: element.closest('h1,h2'), visible: true }));
+function updateDecorativeMotion() {
+  decorativeMotion.forEach(({ element, visible }) => {
+    element.classList.toggle('is-motion-idle', document.hidden || !visible);
+  });
+}
+
 if ('IntersectionObserver' in window) {
+  const decorationObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      decorativeMotion.find(({ trigger }) => trigger === entry.target).visible = entry.isIntersecting;
+    });
+    updateDecorativeMotion();
+  }, { rootMargin: '160px 0px' });
+  decorativeMotion.forEach(({ trigger }) => decorationObserver.observe(trigger));
   new IntersectionObserver(entries => {
     heroVisible = entries[0].isIntersecting;
     updateHeroRotation();
@@ -174,6 +219,8 @@ if ('IntersectionObserver' in window) {
 }
 document.addEventListener('visibilitychange', updateRotation);
 document.addEventListener('visibilitychange', updateHeroRotation);
+document.addEventListener('visibilitychange', updateDecorativeMotion);
+updateDecorativeMotion();
 
 // Layout offsets stay stable while an entrance translates, rotates or clips its element.
 function layoutTop(element) {
@@ -192,19 +239,27 @@ function updateScrollReveals() {
     scrollReveals.forEach(({ element }) => element.classList.remove('is-pending'));
     return;
   }
-  const viewportTop = window.scrollY + document.querySelector('.header').offsetHeight;
-  const viewportBottom = window.scrollY + window.innerHeight - document.querySelector('.mobile-contact').offsetHeight;
+  // Hovering service cards, expanding FAQs and resizing can change layout.
+  // Ordinary scrolling cannot, so reuse those bounds until layout invalidates them.
+  // Older browsers without ResizeObserver retain the original measurement path.
+  if (geometryDirty || !canObserveLayout) {
+    headerHeight = header.offsetHeight;
+    mobileContactHeight = mobileContact.offsetHeight;
+    revealGeometry = scrollReveals.map(({ element, trigger }) => {
+      const top = layoutTop(trigger);
+      const height = trigger.offsetHeight;
+      return { element, top, bottom: top + height, height };
+    });
+    geometryDirty = false;
+  }
+  const viewportTop = window.scrollY + headerHeight;
+  const viewportBottom = window.scrollY + window.innerHeight - mobileContactHeight;
   const viewportHeight = Math.max(0, viewportBottom - viewportTop);
-  // Read all layout bounds before changing classes to avoid repeated layout work.
-  const positions = scrollReveals.map(({ element, trigger }) => {
-    const top = layoutTop(trigger);
-    const height = trigger.offsetHeight;
-    return { element, top, bottom: top + height, height };
-  });
-  positions.forEach(({ element, top, bottom, height }) => {
+  const focusedElement = document.activeElement;
+  revealGeometry.forEach(({ element, top, bottom, height }) => {
     const visible = Math.min(bottom, viewportBottom) - Math.max(top, viewportTop);
     const entryDistance = Math.min(height * .1, viewportHeight * .1);
-    if (element.contains(document.activeElement) || visible >= entryDistance) {
+    if (element.contains(focusedElement) || visible >= entryDistance) {
       element.classList.remove('is-pending');
     } else if (bottom <= viewportTop || top >= viewportBottom) {
       // Rearm only after a full exit, in either scroll direction.
@@ -216,14 +271,28 @@ function updateScrollReveals() {
 function scheduleScrollReveals() {
   if (!revealFrame && !motionIsPaused()) revealFrame = requestAnimationFrame(updateScrollReveals);
 }
+function invalidateRevealGeometry() {
+  geometryDirty = true;
+  scheduleScrollReveals();
+}
 window.addEventListener('scroll', scheduleScrollReveals, { passive: true });
-window.addEventListener('resize', scheduleScrollReveals);
-window.addEventListener('load', scheduleScrollReveals);
+window.addEventListener('resize', invalidateRevealGeometry);
+window.addEventListener('load', invalidateRevealGeometry);
 document.addEventListener('focusin', scheduleScrollReveals);
-document.querySelectorAll('.faq-list details').forEach(details => details.addEventListener('toggle', scheduleScrollReveals));
-document.fonts?.ready.then(scheduleScrollReveals);
+document.querySelectorAll('.faq-list details').forEach(details => details.addEventListener('toggle', invalidateRevealGeometry));
+document.fonts?.ready.then(invalidateRevealGeometry);
+if (canObserveLayout) {
+  const layoutObserver = new ResizeObserver(invalidateRevealGeometry);
+  const layoutElements = new Set([
+    document.body, header, mobileContact,
+    ...document.querySelectorAll('main,main>section,.service-grid'),
+    ...scrollReveals.map(({ trigger }) => trigger)
+  ]);
+  layoutElements.forEach(element => layoutObserver.observe(element));
+}
 
 function updatePageMotion() {
+  geometryDirty = true;
   document.body.classList.toggle('motion-paused', motionIsPaused());
   motionToggle.querySelector('.motion-label').textContent = motionPreference.matches ? 'Motion off' : userPausedMotion ? 'Play motion' : 'Pause motion';
   motionToggle.querySelector('.motion-icon').textContent = motionIsPaused() ? '▷' : 'Ⅱ';
