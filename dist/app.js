@@ -11,7 +11,7 @@
   };
   toggle.hidden = false;
   toggle.addEventListener('click', () => setMenu(toggle.getAttribute('aria-expanded') !== 'true'));
-  nav.addEventListener('click', e => { if (e.target.closest('a')) setMenu(false); });
+  document.querySelector('.header').addEventListener('click', e => { if (e.target.closest('a')) setMenu(false); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') setMenu(false, true); });
   document.addEventListener('click', e => { if (!e.target.closest('.header')) setMenu(false); });
   mobile.addEventListener('change', () => setMenu(false));

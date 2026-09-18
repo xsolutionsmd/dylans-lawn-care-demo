@@ -25,7 +25,7 @@ plus validated service links. See [design decisions](DESIGN_DECISIONS.md).
 
 - Desktop at 1280/1440, tablet at 768, mobile at 390, and narrow 320px layouts.
   No page-level horizontal overflow; visual desktop/mobile review completed.
-- Mobile menu: opens, correct expanded state, closes with Escape. Gallery next
+- Mobile menu: opens, correct expanded state, closes with Escape and home selection. Gallery next
   control and keyboard arrows advance; FAQ opens with readable content.
 - Hero photo sequence advances; pause holds the displayed photo. Offscreen
   visibility suspends the sequence. Reduced motion disables it and reveals all
