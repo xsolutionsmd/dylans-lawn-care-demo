@@ -9,6 +9,9 @@ For browser behavior changes, use [Reticle](docs/RETICLE.md) when useful: start 
 
 ## Reference-led visual design
 
+Always read [persistent design requirements](docs/DESIGN_REQUIREMENTS.md) in full
+before changing presentation. Carry explicit prior corrections into any redesign.
+
 For a new website, new app interface or substantial visual redesign, including
 "build me a beautiful website", use the repository's
 [reference-design skill](.agents/skills/reference-design/SKILL.md) and

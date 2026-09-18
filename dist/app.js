@@ -41,7 +41,6 @@
         el.setAttribute('aria-hidden', String(i !== scene));
         bars[i].classList.toggle('is-current', i === scene);
       });
-      document.querySelector('.photo-index').textContent = String(scene + 1).padStart(2, '0') + ' / OUTSIDE, CARED FOR';
       cycleHero();
     }, 7000);
   }
@@ -84,7 +83,6 @@
   const cards = [...track.querySelectorAll('.project-card')];
   const prev = document.querySelector('.previous');
   const next = document.querySelector('.next');
-  const count = document.querySelector('#project-count');
   const announce = document.querySelector('#project-announcement');
   let index = 0;
   let scrollFrame = 0;
@@ -93,7 +91,6 @@
     const end = track.scrollWidth - track.clientWidth;
     const left = track.scrollLeft;
     index = left >= end - 4 ? cards.length - 1 : cards.reduce((best, card, i) => Math.abs(position(card) - left) < Math.abs(position(cards[best]) - left) ? i : best, 0);
-    count.textContent = String(index + 1).padStart(2, '0') + ' / 04';
     prev.disabled = left < 4;
     next.disabled = left >= end - 4;
   };

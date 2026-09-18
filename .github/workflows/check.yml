@@ -30,6 +30,13 @@ jobs:
           node scripts/test-admin-email.cjs
       - name: Check manual dev deployment recovery
         run: python3 scripts/test-dev-deploy.py
+      - name: Check mobile card containment and design requirements
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_GC: '1'
+        run: |
+          npm install --prefix .local/browser-tests --no-save --package-lock=false --ignore-scripts playwright@1.63.0
+          node .local/browser-tests/node_modules/playwright/cli.js install --with-deps chromium webkit
+          PLAYWRIGHT_MODULE="$PWD/.local/browser-tests/node_modules/playwright" node scripts/test-browser-layout.cjs
   release:
     name: Publish and deploy to Oracle
     needs: container

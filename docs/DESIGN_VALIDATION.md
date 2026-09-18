@@ -1,5 +1,24 @@
 # Dev redesign validation
 
+## September 18 correction after phone feedback
+
+The earlier Chromium review missed a date control overflowing its own card on
+iPhone and did not enforce several explicit presentation preferences. The fix
+normalizes native date appearance and inline sizing while preserving type=date;
+empty/filled values and all form controls are checked against padded card edges.
+The isolated regression suite passed 48 cases in Chromium and WebKit at widths
+320, 375, 390, 430, 768 and 1440, in service and estimate modes. This is not a
+physical iPhone test. The suite also prevents decorative numbers, visible review
+check dates/demo labels and directional text glyphs returning. Public booking's
+19 cases and the 19-file packaged-container check passed. The browser suite is
+now included in PR/dev checks. See DESIGN_REQUIREMENTS.md for the complete rules.
+
+The correction removes service/process/photo counters, restores the requested
+navigation, SVG arrows and clean visitor copy, and removes the location eyebrow.
+The complete accessible-photo review is tracked separately before photo changes.
+
+## Original redesign checkpoint
+
 September 18, 2026. Scope: the public homepage and booking presentation on dev,
 plus validated service links. See [design decisions](DESIGN_DECISIONS.md).
 
