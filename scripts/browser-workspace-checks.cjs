@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const admin = path.resolve(__dirname, '../booking/web');
-const settings = {businessName:'Dylan’s Lawn Care',timeZone:'America/New_York',slotMinutes:60,estimateMinutes:15,bufferMinutes:15,externalBufferMinutes:30,minNoticeHours:12,horizonDays:30,weekly:[1,2,3,4,5].map(weekday=>({weekday,start:'09:00',end:'17:00'})),exceptions:[{date:'2026-12-24',closed:false,windows:[{start:'09:00',end:'12:00'}]}],blockedWeekly:[],blockedDates:[]};
+const settings = {businessName:'Dylan’s Lawn Care',timeZone:'America/New_York',slotMinutes:60,estimateMinutes:15,bufferMinutes:15,externalBufferMinutes:30,minNoticeHours:12,horizonDays:30,weekly:[1,2,3,4,5].map(weekday=>({weekday,start:'09:00',end:'17:00'})),exceptions:[{date:'2026-12-24',closed:false,start:'09:00',end:'12:00'}],blockedWeekly:[{weekday:3,allDay:false,start:'12:00',end:'13:00'}],blockedDates:[{date:'2026-12-25',allDay:true}]};
 const bookings = [{id:'fixture-job',kind:'service',serviceId:'lawn-care',name:'Sample Customer',phone:'410-555-0100',email:'customer@example.test',address:'Example property',start:'2026-10-02T13:00:00Z',end:'2026-10-02T14:00:00Z',status:'needs_followup',calendarStatus:'synced',notes:'Please use the side gate.',adminNotes:'',createdAt:'2026-09-18T15:00:00Z'}];
 function respond(request,response) {
   const pathname = new URL(request.url,'http://localhost').pathname;
