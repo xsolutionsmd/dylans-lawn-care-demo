@@ -1,35 +1,112 @@
 'use strict';
 (() => {
   const $ = selector => document.querySelector(selector);
-  const kind = new URLSearchParams(window.location.search).get('type') === 'estimate' ? 'estimate' : 'service';
+  let kind = new URLSearchParams(window.location.search).get('type') === 'estimate' ? 'estimate' : 'service';
   const preferredService = new URLSearchParams(window.location.search).get('service');
-  const isEstimate = kind === 'estimate';
-  const requestLabel = isEstimate ? 'Request estimate or callback' : 'Request appointment';
-  document.querySelectorAll('[data-booking-kind]').forEach(link => {
-    if (link.dataset.bookingKind === kind) link.setAttribute('aria-current', 'page');
-    else link.removeAttribute('aria-current');
-  });
-  if (isEstimate) {
-    document.title = 'Request an estimate or callback · Dylan’s Lawn Care';
-    document.querySelector('meta[name="description"]').content = 'Request an estimate or a callback from Dylan’s Lawn Care. Share your property details and choose a short conversation before booking the work.';
-    $('#booking-eyebrow').textContent = 'REQUEST AN ESTIMATE OR CALLBACK';
-    const emphasis = document.createElement('em'); emphasis.textContent = 'project.';
-    $('#booking-heading').replaceChildren('Plan your ', document.createElement('br'), 'next ', emphasis);
-    $('#booking-introduction').textContent = 'Need a price or some advice before booking the work? Share your property details and choose a time for Dylan to call you.';
-    $('#booking-scope').textContent = 'This reserves a short estimate or callback conversation. Book a service when you’re ready to schedule the work.';
-    $('#service-description').textContent = 'What would you like an estimate or advice about?';
-    $('#time-heading').textContent = 'When can Dylan call?';
-    $('#booking-privacy').textContent = 'Your details go to Dylan so he can prepare for the call and discuss an estimate. You may receive emails about this request and a reminder. This request does not book a service visit.';
-    $('#success-eyebrow').textContent = 'THANK YOU FOR GETTING IN TOUCH';
-    $('#submit-booking .button-label').textContent = requestLabel;
+  let isEstimate = kind === 'estimate';
+  let requestLabel = isEstimate ? 'Request estimate or callback' : 'Request appointment';
+  function renderKind() {
+    isEstimate = kind === 'estimate';
+    requestLabel = isEstimate ? 'Request estimate or callback' : 'Request appointment';
+    $('#booking-modes').dataset.kind = kind;
+    document.querySelectorAll('[data-booking-kind]').forEach(link => {
+      if (link.dataset.bookingKind === kind) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
+    if (isEstimate) {
+      document.title = 'Request an estimate or callback · Dylan’s Lawn Care';
+      document.querySelector('meta[name="description"]').content = 'Request an estimate or a callback from Dylan’s Lawn Care. Share your property details and choose a short conversation before booking the work.';
+      $('#booking-eyebrow').textContent = 'REQUEST AN ESTIMATE OR CALLBACK';
+      const emphasis = document.createElement('em'); emphasis.textContent = 'project.';
+      $('#booking-heading').replaceChildren('Plan your ', document.createElement('br'), 'next ', emphasis);
+      $('#booking-introduction').textContent = 'Need a price or some advice before booking the work? Share your property details and choose a time for Dylan to call you.';
+      $('#booking-scope').textContent = 'This reserves a short estimate or callback conversation. Book a service when you’re ready to schedule the work.';
+      $('#service-description').textContent = 'What would you like an estimate or advice about?';
+      $('#time-heading').textContent = 'When can Dylan call?';
+      $('#booking-privacy').textContent = 'Your details go to Dylan so he can prepare for the call and discuss an estimate. You may receive emails about this request and a reminder. This request does not book a service visit.';
+      $('#success-eyebrow').textContent = 'THANK YOU FOR GETTING IN TOUCH';
+      $('#submit-booking .button-label').textContent = requestLabel;
+    } else {
+      document.title = 'Book an appointment · Dylan’s Lawn Care';
+      document.querySelector('meta[name="description"]').content = 'Book a service appointment with Dylan’s Lawn Care. Choose your service, date and time, and share your property details.';
+      $('#booking-eyebrow').textContent = 'BOOK AN APPOINTMENT';
+      const emphasis = document.createElement('em'); emphasis.textContent = 'visit.';
+      $('#booking-heading').replaceChildren('Book your ', document.createElement('br'), 'next ', emphasis);
+      $('#booking-introduction').textContent = 'Choose the service you need and an available date and time. Add your address and contact details to request a visit from Dylan.';
+      $('#booking-scope').textContent = 'Dylan will review your job details and confirm the service appointment.';
+      $('#service-description').textContent = 'Tell us what needs doing at your property.';
+      $('#time-heading').textContent = 'Pick a date and time.';
+      $('#booking-privacy').textContent = 'Your details go to Dylan to arrange the work. He will review your request and confirm the appointment. You may receive emails about your request and a reminder.';
+      $('#success-eyebrow').textContent = 'THANK YOU FOR BOOKING';
+      $('#submit-booking .button-label').textContent = requestLabel;
+    }
+    if (state.config) {
+      const data = state.config;
+      $('#appointment-description').textContent = isEstimate ? `${data.estimateMinutes}-minute estimate or callback conversations. Your service visit is booked separately.` : `${data.slotMinutes}-minute service appointments. Dylan can adjust the length for your job.`;
+      if (!data.bookingEnabled) $('#unavailable-message').textContent = isEstimate ? 'Online callback times are unavailable right now. Call Dylan to request an estimate.' : 'Online appointment times are unavailable right now. Call Dylan to arrange your service appointment.';
+    }
   }
 
-  const state = { config: null, slots: [], selected: null, loadingSlots: false, slotRequest: 0, slotController: null, submitting: false, attempt: null, receipt: null, receiptTimer: null };
+  const state = { config: null, configLoading: false, slots: [], selected: null, loadingSlots: false, slotRequest: 0, slotController: null, submitting: false, attempt: null, receipt: null, receiptTimer: null };
   const form = $('#booking-form');
   const dateInput = $('#appointment-date');
   const serviceInput = $('#service');
   const submitButton = $('#submit-booking');
   const fields = ['#service-fields', '#time-fields', '#customer-fields'].map($);
+  renderKind();
+  // Keep real links for deep links/new tabs; ordinary activation changes this page.
+  // A possibly accepted request must be resolved before changing its meaning.
+  function writeKindURL(replace = false) {
+    const url = new URL(window.location.href);
+    if (kind === 'estimate') url.searchParams.set('type', 'estimate');
+    else url.searchParams.delete('type');
+    window.history[replace ? 'replaceState' : 'pushState'](null, '', url.pathname + url.search + url.hash);
+  }
+  function updateModeLock() {
+    const locked = state.submitting || Boolean(state.attempt) || Boolean(state.receipt);
+    document.querySelectorAll('[data-booking-kind]').forEach(link => {
+      if (locked && link.dataset.bookingKind !== kind) link.setAttribute('aria-disabled', 'true');
+      else link.removeAttribute('aria-disabled');
+    });
+  }
+  async function switchKind(next, fromHistory = false) {
+    if (next === kind) return;
+    if (state.submitting || state.attempt || state.receipt) {
+      if (fromHistory) writeKindURL(true);
+      $('#mode-message').dataset.visible = 'true';
+      $('#mode-message').textContent = state.receipt ? 'Your saved request is shown below. Return to the website to begin another request.' : 'Finish checking this request before changing its type, so it cannot be submitted twice.';
+      return;
+    }
+    const direction = next === 'estimate' ? 1 : -1;
+    const duration = state.config?.[next === 'estimate' ? 'estimateMinutes' : 'slotMinutes'];
+    if (state.config && (!Number.isInteger(duration) || duration < 1)) {
+      if (fromHistory) writeKindURL(true);
+      $('#mode-message').dataset.visible = 'true';
+      $('#mode-message').textContent = 'Times for that request type are unavailable right now. Call Dylan to arrange it.';
+      return;
+    }
+    kind = next;
+    if (!fromHistory) writeKindURL();
+    renderKind();
+    $('#mode-message').dataset.visible = 'false';
+    $('#mode-message').textContent = isEstimate ? 'Estimate or callback selected. Your details are kept; choose a time for the conversation.' : 'Service appointment selected. Your details are kept; choose a time for the work.';
+    if (!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      ['#booking-heading', '#booking-introduction', '#time-heading'].forEach(selector => {
+        const element = $(selector);
+        element.getAnimations?.().forEach(animation => animation.cancel());
+        element.animate?.([{ opacity: .35, transform: `translateX(${direction * 10}px)` }, { opacity: 1, transform: 'translateX(0)' }], { duration: 320, easing: 'cubic-bezier(.22,1,.36,1)' });
+      });
+    }
+    // loadSlots cancels the old request, invalidates its response and clears its selection.
+    if (state.config) await loadSlots();
+    else if (!state.configLoading) await loadConfig();
+  }
+  document.querySelectorAll('[data-booking-kind]').forEach(link => link.addEventListener('click', event => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button > 0) return;
+    event.preventDefault();
+    return switchKind(link.dataset.bookingKind);
+  }));
+  window.addEventListener('popstate', () => switchKind(new URLSearchParams(window.location.search).get('type') === 'estimate' ? 'estimate' : 'service', true));
   class APIError extends Error { constructor(message, status = 0, code = '') { super(message); this.status = status; this.code = code; } }
   async function api(path, { method = 'GET', body, signal } = {}) {
     const controller = new AbortController();
@@ -71,9 +148,10 @@
     submitButton.querySelector('.button-label').textContent = submitting ? 'Saving your request…' : state.attempt ? 'Check & retry this request' : requestLabel;
     form.setAttribute('aria-busy', String(submitting));
     lockFields(submitting || Boolean(state.attempt));
+    updateModeLock();
   }
   async function loadSlots() {
-    if (!state.config || state.attempt) return;
+    if (!state.config || !state.config.bookingEnabled || state.attempt) return;
     state.slotController?.abort();
     const controller = new AbortController();
     state.slotController = controller;
@@ -84,7 +162,7 @@
     $('#retry-slots').hidden = true;
     updateSummary();
     notice('');
-    if (!dateInput.value || !dateInput.checkValidity()) { $('#slots-status').textContent = 'Choose a date within the available booking window.'; state.loadingSlots = false; return; }
+    if (!dateInput.value || !dateInput.checkValidity()) { $('#slots-status').textContent = 'Choose a date within the available booking window.'; state.loadingSlots = false; $('#available-times').setAttribute('aria-busy', 'false'); return; }
     const date = dateInput.value;
     state.loadingSlots = true;
     $('#available-times').setAttribute('aria-busy', 'true');
@@ -118,6 +196,8 @@
     }
   }
   async function loadConfig() {
+    if (state.configLoading) return;
+    state.configLoading = true;
     $('#booking-loading').hidden = false; $('#booking-unavailable').hidden = true; form.hidden = true;
     try {
       const data = await api('/api/public/config');
@@ -143,7 +223,7 @@
     } catch (error) {
       $('#unavailable-message').textContent = error.message || 'Appointment options could not be loaded. Please call Dylan or try again.';
       $('#booking-unavailable').hidden = false;
-    } finally { $('#booking-loading').hidden = true; }
+    } finally { state.configLoading = false; $('#booking-loading').hidden = true; }
   }
   function validReceipt(result) {
     return result && typeof result.id === 'string' && result.id.length > 0 && result.id.length <= 128

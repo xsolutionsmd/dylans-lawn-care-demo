@@ -1,5 +1,27 @@
 # Dev redesign validation
 
+## September 18 owner workspace and smooth request selection
+
+- Chromium and WebKit: 48 public date/card containment cases, plus 70 admin
+  viewport/panel combinations at 320, 375, 390, 430, 768, 1024 and 1440px.
+- In-place request selection, unchanged document time origin, Back/Forward,
+  keyboard activation, retained contact/service/date drafts, different durations,
+  invalidated slot selection and reduced-motion indicator checks pass.
+- Owner fixture checks add/remove weekly hours, toggle/re-enable a day, open/close
+  a request dialog, self-hosted fonts, padded card containment and no overlapping
+  time fields/remove buttons. Desktop and mobile screenshots inspected; interactive
+  browser review uses an isolated synthetic workspace. No real settings saved.
+- Public controller: 23 tests, including submitted kind after switching, pending/
+  uncertain/receipt locks, exact idempotent retry and ignored stale responses.
+  Existing owner refresh, access (27) and email (16) suites pass unchanged.
+- Local `website.ps1 check -NoOpen`: 29 public files, packaging/privacy checks,
+  Go race suite and isolated authentication/CSRF/persistence integration pass.
+  Explicit admin font routes are tested, including public-listener exclusion and
+  directory/license-file exclusion. Fonts/licenses add about 103 KB to source.
+- Browser emulation is not a physical iPhone test. No actual customer requests,
+  calendar events or emails were created. Final CI and hosted release evidence
+  is recorded with the development deployment and private client QA record.
+
 ## September 18 broader photography and gallery refinement
 
 The signed-in Facebook review covered the 80-photo grid, cover album and timeline

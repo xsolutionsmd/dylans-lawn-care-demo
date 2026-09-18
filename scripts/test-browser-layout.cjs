@@ -5,19 +5,21 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
+const workspace = require('./browser-workspace-checks.cjs');
 const {chromium, webkit} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const root = path.resolve(__dirname, '../dist');
 const types = {'.html':'text/html','.css':'text/css','.js':'text/javascript','.woff2':'font/woff2','.webp':'image/webp','.svg':'image/svg+xml'};
 const server = http.createServer((request,response) => {
   const url = new URL(request.url,'http://localhost');
   if (request.method !== 'GET') { response.writeHead(405); return response.end(); }
+  if (workspace.respond(request,response)) return;
   if (url.pathname === '/api/public/config') {
     response.setHeader('content-type','application/json');
     return response.end(JSON.stringify({bookingEnabled:true,timeZone:'America/New_York',horizonDays:365,minNoticeHours:0,slotMinutes:60,estimateMinutes:15,services:[{id:'landscaping',name:'Landscaping'}]}));
   }
   if (url.pathname === '/api/public/slots') {
     response.setHeader('content-type','application/json');
-    return response.end(JSON.stringify({slots:[],timeZone:'America/New_York'}));
+    return response.end(JSON.stringify({date:url.searchParams.get('date'),slots:[],timeZone:'America/New_York'}));
   }
   const file = path.resolve(root,'.'+decodeURIComponent(url.pathname === '/'?'/index.html':url.pathname));
   if (!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()) {response.writeHead(404);return response.end();}
@@ -95,6 +97,7 @@ const server = http.createServer((request,response) => {
         await page.emulateMedia({reducedMotion:'reduce'});
         await page.reload();
         assert.equal(await page.locator('html').evaluate(el=>el.classList.contains('motion-paused')),true);
+        await workspace.run(page,base,name);
         assert.deepEqual(errors,[],`${name} runtime errors`);
         console.log(`${name}: 24 booking containment cases, design constraints and gallery passed`);
       } finally {await browser.close();}

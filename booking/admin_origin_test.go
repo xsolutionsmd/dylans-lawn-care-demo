@@ -96,17 +96,17 @@ func TestSharedOriginAdminPageAndAuthentication(t *testing.T) {
 	if w.Code != 200 || !strings.Contains(w.Body.String(), "Booking portal") || !strings.Contains(w.Body.String(), `href="./" aria-label="Booking portal home"`) {
 		t.Fatal("admin page or relative portal navigation missing")
 	}
-	for _, path := range []string{"/admin.css", "/admin.js"} {
+	for _, path := range []string{"/admin.css", "/admin.js", "/admin/fonts/dm-sans.woff2", "/admin/fonts/newsreader.woff2"} {
 		if w = request(a, true, "GET", path, nil, nil, "", ""); w.Code != 200 || w.Body.Len() == 0 {
 			t.Fatalf("portal asset unavailable: %s", path)
 		}
 	}
-	for _, path := range []string{"/", "/index.html", "/admin/unexpected", "/config/google-client.json", "/data/booking.sqlite"} {
+	for _, path := range []string{"/", "/index.html", "/admin/unexpected", "/admin/fonts/", "/admin/fonts/dmsans-OFL.txt", "/config/google-client.json", "/data/booking.sqlite"} {
 		if w = request(a, true, "GET", path, nil, nil, "", ""); w.Code != 404 {
 			t.Fatalf("unexpected admin route exposed: %s", path)
 		}
 	}
-	for _, path := range []string{"/admin/", "/admin.js", "/api/admin/settings", "/oauth/callback"} {
+	for _, path := range []string{"/admin/", "/admin.js", "/admin/fonts/dm-sans.woff2", "/api/admin/settings", "/oauth/callback"} {
 		if w = request(a, false, "GET", path, nil, nil, "", ""); w.Code != 404 {
 			t.Fatalf("public listener exposed admin route: %s", path)
 		}

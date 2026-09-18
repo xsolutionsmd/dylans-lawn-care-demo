@@ -23,3 +23,20 @@
 #appointment-date::-webkit-datetime-edit{min-width:0;padding:0}
 /* A legible input size also avoids iPhone's automatic focus zoom. */
 input,select,textarea{font-size:16px}
+
+/* One continuous segmented control; entered fields stay mounted. */
+.booking-modes{position:relative;isolation:isolate;--mode-inset:6px;--mode-gap:8px;padding:var(--mode-inset);gap:var(--mode-gap);border-radius:16px}
+.booking-modes::before{content:"";position:absolute;z-index:-1;inset-block:var(--mode-inset);left:var(--mode-inset);width:calc((100% - 2 * var(--mode-inset) - var(--mode-gap))/2);border-radius:11px;background:var(--forest);box-shadow:0 3px 8px #17372917;transition:transform .42s cubic-bezier(.22,1,.36,1)}
+.booking-modes[data-kind=estimate]::before{transform:translateX(calc(100% + var(--mode-gap)))}
+.booking-modes a{border-radius:11px;transition:color .25s,background .25s;min-height:64px;display:flex;flex-direction:column;justify-content:center}
+.booking-modes a[aria-current=page]{background:transparent}
+.booking-modes a:hover:not([aria-current]){background:#ffffff70}
+.booking-modes a[aria-disabled=true]{cursor:default}
+.mode-message{max-width:1220px;margin:0 auto;padding:0 6px;font-size:13px;color:var(--muted)}
+.mode-message:empty{display:none}
+.mode-message:not(:empty){margin-top:12px}
+.mode-message:not([data-visible=true]){position:absolute;width:1px;height:1px;padding:0;margin:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.booking-modes~.booking-layout{margin-top:32px}
+@media(max-width:1280px){.mode-message{margin-inline:30px}}
+@media(max-width:600px){.booking-modes{--mode-inset:5px;--mode-gap:5px}.mode-message{margin-inline:22px}.booking-modes~.booking-layout{margin-top:24px}}
+@media(prefers-reduced-motion:reduce){.booking-modes::before{transition:none}}
