@@ -6,3 +6,14 @@ For dev/main source discovery, read docs/GRAFT.md and run scripts/graft.py with 
 ## Runtime verification
 
 For browser behavior changes, use [Reticle](docs/RETICLE.md) when useful: start the intended local app/preview, select its exact URL session, perform a focused interaction and assert the resulting state/response. Treat unknown or partial observations honestly. Keep instrumentation local, preserve dev/main release gates, and use source/tests plus visual review for the gaps. This does not require Reticle for documentation-only edits.
+
+## Reference-led visual design
+
+For a new website, new app interface or substantial visual redesign, including
+"build me a beautiful website", use the repository's
+[reference-design skill](.agents/skills/reference-design/SKILL.md) and
+[setup guide](docs/DESIGN_WORKFLOW.md). Recover this project's context, inspect
+actual Inspo references, implement with the accepted stack/design route, and
+check the working desktop/mobile preview. Routine backend fixes skip this flow.
+Preserve the project's branch and release contract; design setup is development
+tooling and does not itself authorize deployment.
