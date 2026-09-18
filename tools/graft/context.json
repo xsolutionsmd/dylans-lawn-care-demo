@@ -1,0 +1,8 @@
+{
+  "sourcePatterns": [
+    "dist/*.js",
+    "booking/*.go",
+    "booking/web/*.js"
+  ],
+  "repository": "xsolutionsmd/dylans-lawn-care-demo"
+}
