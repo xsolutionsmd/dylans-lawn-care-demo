@@ -79,4 +79,4 @@ The launcher behavior was adapted from the actual VoiceVault `voicevault.ps1`, `
 
 ## Branch-aware source context
 
-Optional Graft source discovery is available through the repository-local Python CLI. See [setup, dev/main commands, coverage and removal](docs/GRAFT.md). It runs separately from website containers and preserves the existing release workflow.
+Optional whole-repository Graft context (code graph plus bounded Docker/CI/script/config/docs search and reads) is available through the repository-local Python CLI. See [setup, dev/main commands, coverage and removal](docs/GRAFT.md). It runs separately from website containers and preserves the existing release workflow.

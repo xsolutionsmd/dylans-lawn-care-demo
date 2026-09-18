@@ -1,38 +1,57 @@
-# Local source context
+# Whole-repository context for Codex
 
-Graft is optional developer tooling, not a website service or a GitHub client. It runs in an isolated Docker container using Graft **0.18.0**, Node **22.22.0**, a digest-pinned base image and a committed npm dependency lock. Install Python 3.10+, Git and Docker Desktop/Linux Docker. No host Node install is needed.
+Graft is optional developer tooling, not a website service or a GitHub client. The repository-local adapter combines Graft's structural graph with bounded text search and reads across the repository. This covers application code, Dockerfiles, Compose, CI workflows, deployment scripts, configuration and documentation. Unsupported formats are searchable text; they do not gain native Graft dependency edges.
 
-## Use from a clean dev checkout
+## Setup and ordinary development
+
+Requirements: Python 3.10+, Git and Docker Desktop/Linux Docker. No host Node installation is needed. From dev:
 
 ```sh
 python scripts/graft.py --ref dev setup
 python scripts/graft.py --ref dev status
 python scripts/graft.py --ref dev ask "navigation"
-python scripts/graft.py --ref dev callers "close"
+python scripts/graft.py --ref dev search "FROM"
+python scripts/graft.py --ref dev read Dockerfile
+python scripts/graft.py --ref dev search "refs/heads/main"
+python scripts/graft.py --ref dev read .github/workflows/check.yml
 ```
 
-The same commands work in PowerShell and Bash (`python3` may replace `python`). Setup needs the network once. Builds and queries run with no network, no supplied provider credentials, a read-only container filesystem and only an allowlisted source snapshot mounted writable. Optional telemetry and graph seeding are disabled during installation and use. Setup records and verifies the actual image ID and versions; later queries use that immutable local image ID and reject changed tooling until setup is rerun.
+Use the workflow file listed by `status` for this repository (the company uses `.github/workflows/website.yml`). PowerShell and Bash use the same commands; `python3` can replace `python`. `search` and `read` do not need Docker or setup. `--start-line 121 read PATH` continues a long file. Reads are capped at 120 lines/12,000 characters, and literal search at 40 matches/12,000 characters. `status` lists included, excluded and untracked files so gaps remain visible.
 
-Use `api PATH` for a file's signatures, then `ask QUERY` for at most five source excerpts, then `callers SYMBOL` for one-hop relationships. Source results are prefixed `source/`: remove that prefix to open the real checkout file. Follow neighboring files and actual source/tests before editing. This wrapper intentionally offers structural commands only: no deep summaries, cloud Brain, hooks, init, MCP or machine-wide settings.
+`ask` returns at most five graph excerpts and also searches repository text. `api PATH` shows supported-code signatures; `callers SYMBOL` follows one-hop relationships. Strip the `source/` prefix from graph references to open the real checkout file. Follow adjacent files and inspect source/tests before editing. Use literal `search`, bounded `read`, `rg` and direct reads when the graph has no coverage or misses a relationship. HTML/CSS, Dockerfiles, YAML, Markdown, PowerShell and shell code primarily use the text route; Python deployment code and supported application languages can appear in the graph.
 
-## Dev and production are separate views
+## Feature branches and separate main context
 
-The required `--ref` must exactly match the checked-out branch. Dev permits edits to tracked source; main requires a completely clean checkout. Feature branches, detached HEADs and an unexpected GitHub origin are rejected before accessing Docker, GitHub or the cache. These are environment views; feature-branch work can continue with ordinary `rg` and direct reads. Merge approved feature changes into dev before using the dev view. Do not relabel a feature checkout as production.
+By default `--ref` must exactly match the current dev/main branch. To develop on an attached feature branch, explicitly add `--feature`:
 
-Create a separate main checkout with `git worktree add ../site-main main` (or `git worktree add --track -b main ../site-main origin/main` if the local main branch does not exist). Run `python scripts/graft.py --ref main setup` there, then `--ref main ask QUERY`. Keep main fast-forwarded explicitly from `origin/main`; never switch the development working directory merely to answer a production question.
+```sh
+python scripts/graft.py --ref dev --feature setup
+python scripts/graft.py --ref dev --feature ask "deployment"
+python scripts/graft.py --ref dev --feature read Dockerfile
+```
 
-`remote` reads `repos/<configured repository>/git/ref/heads/<explicit ref>` through authenticated `gh api --method GET`. `remote README.md` reads the contents endpoint with `?ref=dev` or `?ref=main`. This is independent of the local graph: remote source may have advanced beyond the local revision shown by `status`. The adapter never implicitly updates or merges source. Existing website update launchers fetch the selected dev/main branch and refuse dirty/unsupported branch state. Main workflows remain the production release gate; Dylan's booking deployment still requires its explicit dev workflow dispatch. Release commands specify `--repo "$GITHUB_REPOSITORY"`.
+The feature view reports its actual branch/commit and owns a distinct cache. GitHub reads still use dev. An ordinary dev view rejects a feature branch; feature mode rejects main and detached HEAD. Production always requires an entirely clean main checkout and never accepts feature mode.
 
-## Coverage, freshness and privacy
+Use a separate main worktree: `git worktree add ../site-main main`, or `git worktree add --track -b main ../site-main origin/main` if local main does not exist. There, use `python scripts/graft.py --ref main setup`, followed by `--ref main ask QUERY`, `search TEXT` or `read PATH`. Keep it fast-forwarded explicitly from origin/main. The adapter never updates or merges source itself.
 
-`tools/graft/context.json` defines the repository identity and root-anchored source patterns. Only tracked regular source files are copied; no symlinks, submodules or nested lookalike paths. The company graph covers its small JavaScript file. Dylan main covers public JavaScript, while Dylan dev also covers Go booking code/tests and admin JavaScript. HTML, CSS, Markdown, workflows, configuration and deployment scripts are intentionally outside this graph: use `rg`, `git show` and direct reads. A missing graph result does not prove missing behavior. A small static site may be faster to inspect directly; no measured account-token savings are claimed.
+`remote` reads the explicit GitHub endpoint `repos/<configured repository>/git/ref/heads/<ref>`. `remote README.md` uses `repos/<repository>/contents/README.md?ref=dev` or `?ref=main`. The validated origin must match `tools/graft/context.json`. Remote results can be newer than local source; compare the revision reported by `status`. Existing website update launchers fetch the selected dev/main branch and reject dirty/unsupported branch state. Production workflows remain main-only; Dylan's booking deployment still requires explicit dev dispatch. Every release CLI operation names `--repo "$GITHUB_REPOSITORY"`.
 
-New untracked files are omitted and listed by `status`; add intended source to Git's index before including it. Never stage a secret to make it searchable. Private booking config, `.local`, `.env`, databases, credentials, dependencies, private project/KB files and runtime data are not source patterns. Production and booking Docker contexts keep their existing application allowlists and exclude all this tooling/state.
+## Reproducibility, scope and privacy
 
-Each checkout owns `.graft-context/<ref>` with an identity stamp, source hashes and derived graph. The wrapper serializes snapshot/build/query with a per-ref exclusive lock, refreshes the snapshot before every query, removes deleted source, verifies branch/commit/config and hashes before and after building, and rejects a cache stamped for another root/repository/ref. If interrupted, remove the specific `<ref>.lock` only after confirming its query is no longer running. Graphs are local code-derived data and are never committed or uploaded.
+The tool uses Graft **0.18.0**, Node **22.22.0**, a digest-pinned base image and committed npm lockfile. Setup needs network access once, verifies both versions and records the immutable image ID. Queries use that ID, not the shared mutable tag, and reject modified tool definitions until setup is rerun.
 
-## Validate and remove
+Build/query containers have no network, a read-only filesystem, temporary HOME and only a repository snapshot mounted writable. No provider keys, global settings, Codex/Claude hooks, upstream init, MCP configuration, cloud Brain or paid summaries are installed. Telemetry and graph seeding are disabled during installation and execution.
 
-`python scripts/test_graft.py` exercises real temporary Git repositories: wrong branch/origin, detached HEAD, dirty production, tracked development edits, malformed patterns, excluded tracked/untracked files, nested lookalikes, deleted files, branch cache separation, poisoned identity and edits/branch switches during a snapshot. It uses no private data, Docker or network.
+`sourcePatterns: ["**"]` selects tracked repository files, then a fixed text-file policy excludes binaries, files over 1 MB, symlinks, submodules, dependencies, generated graph/cache data, runtime/private directories, .env files and known credential files including the private booking setup filenames. Root-anchored narrower patterns remain supported. Docker/Caddy files, dotfile controls, `.github`, supported code, docs and ordinary configuration are included. `status` explicitly reports excluded tracked paths. Verify a new file is safe before staging it; no tool can recognize every arbitrarily named secret. Untracked files are reported but omitted until intentionally staged. The private project/KB is outside the repository root and never mounted.
 
-To remove the optional tool, delete this checkout's `.graft-context` after stopping its queries and remove the local tooling image if no other checkout uses it. A scoped source revert removes `scripts/graft.py`, `scripts/test_graft.py`, `tools/graft/` and the documentation/ignore entries. No global agent config, website service, application volume or production server needs cleanup. Do not run a global Docker prune.
+Each checkout owns `.graft-context/<ref>` or a branch-specific `dev-feature-*` directory containing a source snapshot, hashes and graph. A lock serializes snapshot/build/query. Every request refreshes tracked bytes, removes deleted files, validates root/repository/ref/branch, and rechecks branch/commit/config/source hashes before returning text or querying the built graph. A foreign cache stamp is rejected. If interrupted, remove only its stale `.lock` after confirming no query is running.
+
+All caches are Git-ignored. Existing application Docker allowlists exclude the optional tool and caches, including from the booking image. Graft is never installed in production web containers.
+
+## Verification and removal
+
+`python scripts/test_graft.py` uses isolated real Git fixtures to test wrong repository/ref, detached HEAD, dirty main, explicit feature mode, tracked edits/deletions, cache separation/poisoning, concurrent access, mid-snapshot changes, malformed patterns, nested lookalikes, whole-repository infrastructure/text coverage and excluded private/untracked files. CI runs these alongside the existing website checks. Actual runtime and release evidence is maintained in the owning project's validation records.
+
+The company application's JavaScript alone is under 1 KB: direct reading is simpler for that file. Whole-repository context adds discovery of its operational files, but no account-token savings are claimed. Missing graph edges remain an upstream/parser limitation, not proof that behavior is absent.
+
+To uninstall, stop queries and remove only this checkout's `.graft-context`; remove its tooling image only if no other checkout uses it. A scoped source revert removes the adapter, tests, `tools/graft/` and documentation/ignore entries. No global agent settings, application data volumes or server services need removal. Do not run global Docker pruning.

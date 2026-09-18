@@ -98,5 +98,27 @@ class ContextTests(unittest.TestCase):
         self.write('.graft-context/dev.lock', '')
         with patch('sys.argv', ['graft.py', '--ref', 'dev', 'ask', 'original']):
             with self.assertRaisesRegex(ValueError, 'already in use'): graft.main()
+    def test_whole_repository_text_and_infrastructure_coverage(self):
+        self.write('tools/graft/context.json', json.dumps({'repository':'xsolutionsmd/test-context','sourcePatterns':['**']}))
+        wanted=['Dockerfile','Dockerfile.dev','compose.yaml','.github/workflows/check.yml','.devcontainer/devcontainer.json','tools/graft/Dockerfile','server/install.sh','website.ps1','docs/OPERATIONS.md','app/index.html','app/style.css','Caddyfile']
+        excluded=['.env','booking/config/google-client.json','private/secret.js','data/customer.json','runtime/customer.json','logs/secret.json','models/data.json','node_modules/index.js','image.png','graft/cache.json']
+        for name in wanted+excluded: self.write(name, 'whole-repository-probe')
+        self.git('add', '-f', *wanted, *excluded)
+        cfg, info=graft.identity('dev')
+        files=graft.inventory(cfg)
+        self.assertTrue(set(wanted).issubset(files))
+        self.assertFalse(set(excluded).intersection(files))
+        self.assertEqual(info['omittedUntracked'], [])
+    def test_feature_context_is_explicit_and_separate(self):
+        self.git('checkout', '-qb', 'feature/docker-work')
+        with self.assertRaisesRegex(ValueError, 'Expected branch'): graft.identity('dev')
+        cfg, info=graft.identity('dev', True)
+        self.assertEqual(info['ref'], 'dev')
+        self.assertEqual(info['branch'], 'feature/docker-work')
+        self.assertTrue(info['cacheKey'].startswith('dev-feature-'))
+        self.assertNotEqual(graft.snapshot(cfg, info), self.root/'.graft-context/dev')
+        with self.assertRaisesRegex(ValueError, 'Feature context'): graft.identity('main', True)
+        self.git('checkout', '-q', 'main')
+        with self.assertRaisesRegex(ValueError, 'Feature context'): graft.identity('dev', True)
 
 if __name__ == '__main__': unittest.main()
