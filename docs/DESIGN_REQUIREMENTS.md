@@ -1,7 +1,8 @@
 # Persistent website design requirements
 
-Read this entire file before visual changes, along with DESIGN_DECISIONS.md and
-CONTENT_SOURCES.md. These constraints survive redesigns and reference selection.
+Read this entire file before visual changes, along with DESIGN_DECISIONS.md,
+CONTENT_SOURCES.md and PHOTO_SOURCES.md. These constraints survive redesigns and
+reference selection. Current source summaries explicitly supersede dated UI records.
 
 - No decorative numbering on sections, services, process cards, photo labels or
   visible gallery counters. Factual phone/date/duration/review values remain.
