@@ -15,7 +15,7 @@ while IFS= read -r file; do
   wget -q -O /tmp/asset "$base/${file#./}"
   cmp "$file" /tmp/asset
 done < /tmp/public-files
-for path in .git/config .env .local/runtime.env README.md Dockerfile booking/web/index.html; do
+for path in .git/config .env .local/runtime.env README.md Dockerfile booking/web/index.html .agents/skills/reference-design/SKILL.md .stitch/DESIGN.md docs/DESIGN_WORKFLOW.md; do
   if wget -S -O /dev/null "$base/$path" 2>/tmp/private-headers; then
     echo "Unexpected public file: $path" >&2; exit 1
   fi

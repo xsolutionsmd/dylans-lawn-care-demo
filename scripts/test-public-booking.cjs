@@ -18,7 +18,7 @@ const start = '2026-09-14T13:00:00Z';
 const endAfter = minutes => new Date(Date.parse(start) + minutes * 60000).toISOString();
 const receipt = (kind = 'service', overrides = {}) => ({ id: 'fixture-request', kind, status: 'needs_followup', calendarStatus: 'pending', start, end: endAfter(kind === 'estimate' ? 15 : 60), ...overrides });
 
-function fixture(kind = 'service', configOverrides = {}) {
+function fixture(kind = 'service', configOverrides = {}, preferredService = '') {
   const elements = new Map();
   const calls = [];
   const replies = [];
@@ -56,7 +56,7 @@ function fixture(kind = 'service', configOverrides = {}) {
   document.createElement = tag => new Element(tag);
   document.createDocumentFragment = () => new Element('fragment');
   const window = new Element('window');
-  window.location = { search: kind === 'estimate' ? '?type=estimate' : '' };
+  window.location = { search: '?type=' + kind + '&service=' + encodeURIComponent(preferredService) };
   const response = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => copy(data) });
   const context = vm.createContext({
     document, window, URLSearchParams, Intl, Date, AbortController,
@@ -230,6 +230,15 @@ test('calendar failure is visible and does not imply a confirmed appointment', a
   assert.equal(f.$('#success-sync').textContent, 'Calendar update needs attention');
   assert.doesNotMatch(f.$('#success-description').textContent, /has confirmed/);
   assert.equal(f.timers.size, 0);
+});
+
+test('service deep links select only a currently offered service', async () => {
+  const known = fixture('service', {}, 'lawn-care'); await known.load();
+  assert.equal(known.$('#service').value, 'lawn-care');
+  const unknown = fixture('service', {}, 'retired-service'); await unknown.load();
+  assert.equal(unknown.$('#service').value, '');
+  const estimate = fixture('estimate', {}, 'lawn-care'); await estimate.load();
+  assert.equal(estimate.$('#service').value, 'lawn-care');
 });
 
 (async () => {

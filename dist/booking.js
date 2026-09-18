@@ -2,6 +2,7 @@
 (() => {
   const $ = selector => document.querySelector(selector);
   const kind = new URLSearchParams(window.location.search).get('type') === 'estimate' ? 'estimate' : 'service';
+  const preferredService = new URLSearchParams(window.location.search).get('service');
   const isEstimate = kind === 'estimate';
   const requestLabel = isEstimate ? 'Request estimate or callback' : 'Request appointment';
   document.querySelectorAll('[data-booking-kind]').forEach(link => {
@@ -130,6 +131,8 @@
       }
       serviceInput.replaceChildren(new Option('Choose a service', ''));
       data.services.forEach(service => { if (typeof service.id === 'string' && typeof service.name === 'string') serviceInput.add(new Option(service.name, service.id)); });
+      // A homepage service link is only a preference; the server's current menu is authoritative.
+      if (data.services.some(service => service.id === preferredService)) serviceInput.value = preferredService;
       const today = localDate(new Date(), data.timeZone);
       dateInput.min = today; dateInput.max = addDays(today, data.horizonDays);
       dateInput.value = addDays(today, Math.min(data.horizonDays, Math.floor((data.minNoticeHours || 0) / 24)));
