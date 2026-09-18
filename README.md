@@ -91,3 +91,5 @@ The root Dockerfile, `compose.production.yaml`, existing `server/update-release.
 ## Branch-aware source context
 
 Optional whole-repository Graft context (code graph plus bounded Docker/CI/script/config/docs search and reads) is available through the repository-local Python CLI. See [setup, dev/main commands, coverage and removal](docs/GRAFT.md). It runs separately from website containers and preserves the existing release workflow.
+
+Optional [Reticle runtime verification](docs/RETICLE.md) observes local browser behavior alongside normal tests and visual review.
