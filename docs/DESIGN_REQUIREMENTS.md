@@ -21,6 +21,12 @@ reference selection. Current source summaries explicitly supersede dated UI reco
   performance support each other; do not flatten the design merely to save bytes.
 - Test individual fields within the card's padded content box, not just the page
   width. Retain native date picking and input labels, keyboard and focus behavior.
+- The owner portal shares the accepted public palette and typography, while
+  preserving familiar navigation and control placement. Weekly time fields and
+  their remove button each need their own space at narrow phone widths.
+- Booking/estimate selection is an in-place sliding control, with preserved
+  contact/service/date drafts, browser history and reduced motion. Refresh slots
+  for the new duration; never reinterpret a pending or already saved request.
 
 ## Browser regression check
 

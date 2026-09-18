@@ -22,6 +22,7 @@ function fixture(kind = 'service', configOverrides = {}, preferredService = '') 
   const elements = new Map();
   const calls = [];
   const replies = [];
+  const slotReplies = [];
   const timers = new Map();
   let timerID = 0;
   let keyID = 0;
@@ -57,9 +58,14 @@ function fixture(kind = 'service', configOverrides = {}, preferredService = '') 
   document.createDocumentFragment = () => new Element('fragment');
   const window = new Element('window');
   window.location = { search: '?type=' + kind + '&service=' + encodeURIComponent(preferredService) };
+  window.location.href = 'https://example.test/book.html' + window.location.search;
+  window.history = Object.fromEntries(['pushState', 'replaceState'].map(method => [method, (_state, _title, value) => {
+    const url = new URL(value, window.location.href);
+    window.location.href = url.href; window.location.search = url.search;
+  }]));
   const response = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => copy(data) });
   const context = vm.createContext({
-    document, window, URLSearchParams, Intl, Date, AbortController,
+    document, window, URL, URLSearchParams, Intl, Date, AbortController,
     crypto: { randomUUID: () => `fixture-idempotency-key-${++keyID}` },
     Option: function Option(text, value) { return Object.assign(new Element('option'), { textContent: text, value }); },
     FormData: function FormData(form) { assert.equal(form, $('#booking-form')); return Object.entries(contact); },
@@ -71,6 +77,7 @@ function fixture(kind = 'service', configOverrides = {}, preferredService = '') 
       assert.equal(options.cache, 'no-store');
       if (url === '/api/public/config') return response(config);
       if (url.startsWith('/api/public/slots?')) {
+        if (slotReplies.length) return slotReplies.shift()();
         const query = new URL(url, 'https://example.test').searchParams;
         return response({ date: query.get('date'), timeZone: config.timeZone, slots: [{ start, end: endAfter(query.get('kind') === 'estimate' ? config.estimateMinutes : config.slotMinutes) }] });
       }
@@ -85,7 +92,7 @@ function fixture(kind = 'service', configOverrides = {}, preferredService = '') 
   });
   vm.runInContext(testSource, context, { filename: controllerPath });
   return {
-    $, calls, contact, config, replies, timers, document, window, modeLinks,
+    $, calls, contact, config, replies, slotReplies, timers, document, window, modeLinks,
     state: context.publicTest.state,
     load: context.publicTest.loadConfig,
     posts: () => calls.filter(call => call.method === 'POST'),
@@ -239,6 +246,60 @@ test('service deep links select only a currently offered service', async () => {
   assert.equal(unknown.$('#service').value, '');
   const estimate = fixture('estimate', {}, 'lawn-care'); await estimate.load();
   assert.equal(estimate.$('#service').value, 'lawn-care');
+});
+
+test('in-place switch keeps service/contact/date and submits the newly selected kind and duration', async () => {
+  const f=fixture(); await f.load(); await f.choose();
+  f.contact.notes='Keep this draft'; const date=f.$('#appointment-date').value;
+  await f.modeLinks[1].emit('click');
+  assert.match(f.window.location.search,/type=estimate/);
+  assert.equal(f.$('#service').value,'lawn-care');
+  assert.equal(f.$('#appointment-date').value,date);
+  assert.equal(f.state.selected,null);
+  assert.match(f.$('#appointment-description').textContent,/^15-minute/);
+  await f.choose(); f.respond(receipt('estimate',{calendarStatus:'synced'})); await f.submit();
+  assert.equal(f.posts()[0].body.kind,'estimate'); assert.equal(f.posts()[0].body.notes,'Keep this draft');
+  assert.equal(f.calls.filter(call=>call.url==='/api/public/config').length,1);
+  await f.modeLinks[0].emit('click');
+  assert.match(f.window.location.search,/type=estimate/,'Saved receipt cannot be reinterpreted as another kind');
+  assert.match(f.$('#mode-message').textContent,/saved request/);
+});
+
+test('switching is blocked during a pending or uncertain submission, including browser history', async () => {
+  const f=fixture(); await f.load(); await f.choose();
+  let release; f.replies.push(()=>new Promise(resolve=>{release=resolve;}));
+  const pending=f.submit();
+  await f.modeLinks[1].emit('click');
+  assert.equal(f.modeLinks[1].attributes['aria-disabled'],'true');
+  assert.doesNotMatch(f.window.location.search,/type=estimate/);
+  release({ok:false,status:503,json:async()=>({error:'Unavailable'})}); await pending;
+  await f.modeLinks[1].emit('click'); assert.doesNotMatch(f.window.location.search,/type=estimate/);
+  f.window.location.href='https://example.test/book.html?type=estimate';f.window.location.search='?type=estimate';
+  await f.window.emit('popstate'); assert.doesNotMatch(f.window.location.search,/type=estimate/);
+  f.respond(receipt('service',{calendarStatus:'synced'})); await f.submit();
+  assert.equal(f.posts().length,2); assert.equal(f.posts()[0].serializedBody,f.posts()[1].serializedBody);
+});
+
+test('a rejected unavailable time releases the mode lock; missing duration does not guess', async () => {
+  const f=fixture(); await f.load(); await f.choose();
+  f.respond({error:'Taken',code:'slot_unavailable'},409);await f.submit();
+  await f.modeLinks[1].emit('click');assert.match(f.window.location.search,/type=estimate/);
+  const legacy=fixture('service',{estimateMinutes:undefined});await legacy.load();
+  await legacy.modeLinks[1].emit('click');assert.doesNotMatch(legacy.window.location.search,/type=estimate/);
+  assert.match(legacy.$('#mode-message').textContent,/unavailable/);
+});
+
+test('a stale response ignored by the transport cannot replace newer slots or selection', async () => {
+  const f=fixture(); await f.load();
+  let release;f.slotReplies.push(()=>new Promise(resolve=>{release=resolve;}));
+  const stale=f.modeLinks[1].emit('click');
+  await f.modeLinks[0].emit('click');await f.choose();
+  const selected=f.state.selected;
+  release({ok:true,status:200,json:async()=>({date:f.$('#appointment-date').value,timeZone:'America/New_York',slots:[{start,end:endAfter(15)}]})});
+  await stale;
+  assert.equal(f.state.selected,selected);
+  assert.equal(f.state.slots[0].end,endAfter(60));
+  assert.equal(f.state.loadingSlots,false);
 });
 
 (async () => {

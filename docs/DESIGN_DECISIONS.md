@@ -1,5 +1,31 @@
 # Dylan dev: Field & Form
 
+## Owner workspace and request switch refinement — September 18, 2026
+
+Derek endorsed the current public design and requested the same finish for the
+owner portal, preserving the familiar arrangement. This is an adaptation of the
+accepted Field & Form system, not a new design-generation cycle. Forest/ivory,
+Newsreader headings and DM Sans controls now extend through admin panels, dialogs,
+navigation and availability. Self-hosted fonts reuse the public assets/licenses;
+only two explicit font paths were added on the admin listener. No external font
+service, new UI framework, gateway change or authentication change is needed.
+
+Time windows use two flexible columns plus a dedicated 44px remove-button column,
+bottom aligned with native time fields. Mobile stacks each day; labels, add-hour
+actions and all existing settings remain in their familiar places. Short, reduced-
+motion-aware panel entrances and control feedback add polish without background loops.
+
+Public booking links retain deep links and new-tab behavior. Ordinary activation
+slides one indicator and updates the existing document/history. Contact, property,
+service and date drafts stay mounted; selected slots clear because durations differ.
+Aborted/outdated slot responses cannot overwrite newer choices. Submitting,
+uncertain and saved requests stay locked to their original kind and idempotency key.
+The same-document live announcement is visually hidden during routine switching,
+so it does not push the form down. Blocked changes show an explanatory message.
+
+The homepage and real-work gallery remain as approved. This change is dev only;
+main is a separate static site and is not a merge destination for this application.
+
 September 18, 2026. A complete public dev-site reimagination, explicitly authorized
 for `dev-demo.xsolutionsmd.com`. Main remains the separate static site. This is
 a demonstration, not evidence of a completed sale or a client-approved launch.

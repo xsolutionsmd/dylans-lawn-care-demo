@@ -279,7 +279,7 @@
       function appendWindow(start = '09:00', end = '17:00') {
         const window = node('div', 'time-window'); const startLabel = timeInput(`${day} from`, start); const endLabel = timeInput('Until', end); const remove = node('button', 'icon-button', '×'); remove.type = 'button'; remove.setAttribute('aria-label', `Remove ${day} time window`);
         remove.addEventListener('click', () => { window.remove(); if (!slots.children.length) toggle.checked = false; syncDay(); dirty(); });
-        window.append(startLabel, node('span', '', '–'), endLabel, remove); slots.append(window);
+        window.append(startLabel, endLabel, remove); slots.append(window);
       }
       entries.forEach(entry => appendWindow(entry.start, entry.end));
       const add = node('button', 'add-window', '+ Add hours'); add.type = 'button'; add.setAttribute('aria-label', `Add hours for ${day}`); add.addEventListener('click', () => { toggle.checked = true; appendWindow(); syncDay(); dirty(); slots.lastElementChild.querySelector('input').focus(); });

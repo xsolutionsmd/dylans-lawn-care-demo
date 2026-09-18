@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-//go:embed web/index.html web/admin.css web/admin.js config/google-client.json
+//go:embed web/index.html web/admin.css web/admin.js web/admin/fonts config/google-client.json
 var embedded embed.FS
 
 // Set from the same source revision as the container's OCI label at build time.
@@ -410,6 +410,8 @@ func (a *App) adminHandler() http.Handler {
 			page.URL.Path = "/"
 			page.URL.RawPath = ""
 			assets.ServeHTTP(w, page)
+		case r.URL.Path == "/admin/fonts/dm-sans.woff2" || r.URL.Path == "/admin/fonts/newsreader.woff2":
+			assets.ServeHTTP(w, r)
 		case r.URL.Path == "/admin.css" || r.URL.Path == "/admin.js" || (a.cfg.AdminBasePath == "" && r.URL.Path == "/index.html"):
 			assets.ServeHTTP(w, r)
 		default:
