@@ -9,3 +9,9 @@ playwright-report/
 *.log
 Thumbs.db
 .DS_Store
+
+# Local source context and derived graph
+.graft-context/
+/graft/
+__pycache__/
+*.pyc

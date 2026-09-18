@@ -76,3 +76,7 @@ The same Git source and `dist/` are the publication inputs, so the final client 
 ## Workflow provenance
 
 The launcher behavior was adapted from the actual VoiceVault `voicevault.ps1`, `scripts/voicevault.ps1`, `dev/voicevault-dev.ps1` and development guide, plus the verified X Solutions Caddy/image workflow. Useful conventions retained: a single source tree, separate mounted and packaged modes, health-checked start, safe dev/main updates and intentional release gates. VoiceVault's database, AI tools, Portainer integration and credential volumes are unnecessary for this static demo and were not copied.
+
+## Branch-aware source context
+
+Optional whole-repository Graft context (code graph plus bounded Docker/CI/script/config/docs search and reads) is available through the repository-local Python CLI. See [setup, dev/main commands, coverage and removal](docs/GRAFT.md). It runs separately from website containers and preserves the existing release workflow.
