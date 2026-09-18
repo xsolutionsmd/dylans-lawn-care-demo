@@ -92,15 +92,15 @@ jobs:
             --arg bookingImage "ghcr.io/xsolutionsmd/dylans-lawn-care-dev-booking@$BOOKING_DIGEST" \
             '{schema:1,environment:"dev",revision:$revision,runId:$runId,runAttempt:$runAttempt,webImage:$webImage,bookingImage:$bookingImage}' > deployment.json
           request="dev-request-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
-          gh release create "$request" deployment.json --target "$GITHUB_SHA" --prerelease --latest=false \
+          gh release create --repo "$GITHUB_REPOSITORY" "$request" deployment.json --target "$GITHUB_SHA" --prerelease --latest=false \
             --title "Manual dev request $GITHUB_RUN_ID/$GITHUB_RUN_ATTEMPT" \
             --notes 'An explicitly requested dev deployment. This release cannot update the existing demo environment.'
-          if ! gh release view dev-server >/dev/null 2>&1; then
-            gh release create dev-server --target "$GITHUB_SHA" --prerelease --latest=false \
+          if ! gh release view --repo "$GITHUB_REPOSITORY" dev-server >/dev/null 2>&1; then
+            gh release create --repo "$GITHUB_REPOSITORY" dev-server --target "$GITHUB_SHA" --prerelease --latest=false \
               --title 'Dev server deployment request' \
               --notes 'Only the manual Deploy dev to server workflow updates this request. Ordinary pushes do not deploy dev.'
           fi
-          gh release upload dev-server deployment.json --clobber
+          gh release upload --repo "$GITHUB_REPOSITORY" dev-server deployment.json --clobber
       - name: Verify both images through the dev address
         env:
           EXPECTED: ${{ github.sha }}

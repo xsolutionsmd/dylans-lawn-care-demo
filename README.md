@@ -87,3 +87,7 @@ The root Dockerfile, `compose.production.yaml`, existing `server/update-release.
 [compose.dev-server.yaml](compose.dev-server.yaml) and [server/dev](server/dev) belong exclusively to the manual dev environment. Use GitHub Actions → **Deploy dev to server** → **Run workflow**, select **dev**, then confirm **Run workflow**. This builds the chosen dev revision on GitHub and updates only that environment, preserving its private settings and data. See [deployment and recovery instructions](docs/DEV_DEPLOYMENT.md).
 
 [compose.booking.production.yaml](compose.booking.production.yaml) remains a future template for a separately authorized booking launch. It is never selected by the local launchers or either release workflow. No final client launch or owner acceptance is established by the dev deployment.
+
+## Branch-aware source context
+
+Optional whole-repository Graft context (code graph plus bounded Docker/CI/script/config/docs search and reads) is available through the repository-local Python CLI. See [setup, dev/main commands, coverage and removal](docs/GRAFT.md). It runs separately from website containers and preserves the existing release workflow.
