@@ -29,3 +29,4 @@ __pycache__/
 
 # Local design-reference evidence
 .design-evidence/
+.stitch/designs/

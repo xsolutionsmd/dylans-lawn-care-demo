@@ -1,0 +1,10 @@
+{
+  "projectId": "10457520769386141937",
+  "title": "Dylan’s Lawn Care — dev reimagination",
+  "designSystem": "assets/11926397810779079560",
+  "screens": [{"title": "Dylan’s Lawn Care — Reisterstown, Maryland", "deviceType": "DESKTOP", "screenId": null, "note": "Generation completed; list_screens returned empty. Editable HTML recovered through visible canvas iframe; do not invent screen ID."}],
+  "implementation": "dist/index.html",
+  "scope": "dev only",
+  "evidence": "designs/stitch-home.html",
+  "notes": "Generated imagery and unverified business copy were not used. See docs/DESIGN_DECISIONS.md."
+}

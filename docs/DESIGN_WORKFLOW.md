@@ -20,3 +20,8 @@ The skill and all its instructions ship with this repository. Installed optional
 The workflow returns editable source, a real local preview and checks of visual coherence, mobile layout, accessibility and important actions. Existing product/design decisions, source branch and deployment controls remain authoritative. Developer tools and evidence stay outside production images. Keep third-party image evidence under ignored `.design-evidence/` and source citations in appropriate design docs.
 
 Visual quality, speed and usage must be judged on actual outputs. Setup does not redesign or deploy the current application, guarantee subjective beauty or prove a five-minute build. Existing release authorization is separate from permission to create a local preview.
+
+The first dev-site trial is documented in [design decisions](DESIGN_DECISIONS.md)
+and [validation](DESIGN_VALIDATION.md), with portable tokens in
+[`.stitch/DESIGN.md`](../.stitch/DESIGN.md). Prioritize visual quality, interaction
+and photographic detail; then optimize without degrading the experience.
