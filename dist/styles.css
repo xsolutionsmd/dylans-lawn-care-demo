@@ -22,3 +22,24 @@
 
 /* Keep section structure without decorative ordinals or platform arrow glyphs. */
 .process-grid>li{border-top:1px solid #bcc5af;padding-top:24px}.footer-bottom>a{display:inline-flex;align-items:center;gap:10px}.footer-bottom>a svg{width:17px;height:17px}.rating svg{width:15px;height:15px}.intro-line a svg{transition:transform .3s}.intro-line a:hover svg{transform:translateY(5px)}
+
+/* Photography is the detail: generous framing, quiet controls, no counters. */
+.hero-photo{border-radius:3px}.hero-scene:first-child img{object-position:50% 62%}
+.project-card{flex-basis:60%;overflow:visible}.project-card:nth-child(even){flex-basis:42%}
+.photo-open{display:block;position:relative;overflow:hidden;border-radius:3px;background:#254b38;isolation:isolate}
+.project-card img,.project-card:nth-child(even) img{height:410px}
+.photo-expand{position:absolute;right:18px;bottom:18px;display:flex;align-items:center;gap:13px;padding:10px 15px;border-radius:30px;background:#f5f3ebf5;color:var(--deep);font-size:10px;line-height:1.5;box-shadow:0 4px 20px #0002;transition:transform .3s,background .3s}
+.photo-expand svg{width:17px;height:17px}.photo-open:hover .photo-expand,.photo-open:focus-visible .photo-expand{transform:translateY(-3px);background:white}
+.project-card figcaption{border-top:1px solid #647664;padding-top:17px;margin-top:20px}.project-card figcaption>span{letter-spacing:.13em;font-size:10px}.project-card h3{font-size:30px;margin-top:9px}
+.project-track{padding:8px 7px 24px;margin-inline:-7px;scroll-padding-inline:7px}.gallery-footer{margin-top:18px}
+.photo-viewing{overflow:hidden}.photo-dialog{border:1px solid #586b59;border-radius:5px;padding:22px 28px 24px;width:min(1180px,calc(100% - 48px));max-width:none;max-height:calc(100dvh - 32px);color:var(--paper);background:#122b21;box-shadow:0 30px 100px #0007}
+.photo-dialog::backdrop{background:#091710eb}.photo-dialog[open]{animation:photo-dialog-in .25s ease both}
+.photo-dialog-top{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:18px}.photo-dialog-top>span{font-size:10px;letter-spacing:.15em;color:#ccd8c6}
+.photo-close{display:grid;place-items:center;width:44px;height:44px;border:1px solid #819079;border-radius:50%;background:transparent;color:var(--paper);flex-shrink:0}.photo-close:hover{background:#ffffff15}
+.photo-detail img{width:100%;height:min(65dvh,760px);object-fit:contain;background:#0c2118;border-radius:2px}
+.photo-detail figcaption{padding-top:22px;padding-right:125px;min-height:92px}.photo-detail .eyebrow{font-size:9px;color:var(--lime);margin-bottom:8px}.photo-detail h2{font-size:32px;letter-spacing:-.03em}
+.photo-dialog-controls{display:flex;justify-content:flex-end;gap:12px;margin-top:-56px;min-height:56px}.photo-dialog :focus-visible{outline-color:var(--lime)}
+@keyframes photo-dialog-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media(max-width:800px){.project-card,.project-card:nth-child(even){flex-basis:86%}.project-card img,.project-card:nth-child(even) img{height:350px}.project-card h3{font-size:27px}.photo-dialog{width:calc(100% - 24px);padding:12px 16px 20px}.photo-detail img{height:57dvh}.photo-detail figcaption{padding-right:0;min-height:0}.photo-detail h2{font-size:29px}.photo-dialog-controls{margin-top:20px;justify-content:space-between;min-height:44px}.photo-dialog-top>span{font-size:8px}.photo-expand{right:12px;bottom:12px;padding:9px 12px}}
+@media(max-width:480px){.project-card img,.project-card:nth-child(even) img{height:320px}.project-card h3{font-size:25px}.photo-detail img{height:49dvh}.photo-detail h2{font-size:27px}}
+@media(prefers-reduced-motion:reduce){.photo-dialog[open]{animation:none}.photo-expand{transition:none}}

@@ -65,6 +65,36 @@ const server = http.createServer((request,response) => {
         assert.deepEqual(await page.locator('#navigation a').allTextContents(),['Services','Reviews','Our work','Let’s talk ']);
         await page.getByRole('button',{name:'Next project',exact:true}).click();
         assert.match(await page.locator('#project-announcement').innerText(),/Care around every curve/);
+        assert.equal(await page.locator('.project-card').count(),8);
+        for (const width of [320,390,1440]) {
+          await page.setViewportSize({width,height:844});
+          const trigger=page.getByRole('link',{name:'View photograph: Fresh lines. A fresh start.',exact:true});
+          await trigger.click();
+          const dialog=page.getByRole('dialog');
+          await dialog.waitFor({state:'visible'});
+          assert.equal(await page.locator('#photo-title').innerText(),'Fresh lines. A fresh start.');
+          if(process.env.DESIGN_SCREENSHOTS) {
+            fs.mkdirSync(process.env.DESIGN_SCREENSHOTS,{recursive:true});
+            await page.locator('.photo-detail img').evaluate(img=>img.decode());
+            await page.screenshot({path:path.join(process.env.DESIGN_SCREENSHOTS,`${name}-photo-${width}.png`)});
+          }
+          assert.equal(await page.getByRole('button',{name:'Previous photograph',exact:true}).isDisabled(),true);
+          await page.getByRole('button',{name:'Next photograph',exact:true}).click();
+          assert.equal(await page.locator('#photo-title').innerText(),'Care around every curve.');
+          await page.keyboard.press('ArrowRight');
+          assert.equal(await page.locator('#photo-title').innerText(),'A wider view of good care.');
+          for(let n=0;n<12;n++) {
+            await page.keyboard.press('Tab');
+            assert.equal(await page.evaluate(()=>document.querySelector('.photo-dialog').contains(document.activeElement)),true);
+          }
+          assert.equal(await page.evaluate(()=>{const d=document.querySelector('.photo-dialog'),r=d.getBoundingClientRect();return d.scrollWidth<=d.clientWidth+1&&r.left>=0&&r.right<=innerWidth;}),true);
+          await page.keyboard.press('Escape');
+          assert.equal(await dialog.isVisible(),false);
+          assert.equal(await trigger.evaluate(el=>document.activeElement===el),true);
+        }
+        await page.emulateMedia({reducedMotion:'reduce'});
+        await page.reload();
+        assert.equal(await page.locator('html').evaluate(el=>el.classList.contains('motion-paused')),true);
         assert.deepEqual(errors,[],`${name} runtime errors`);
         console.log(`${name}: 24 booking containment cases, design constraints and gallery passed`);
       } finally {await browser.close();}
