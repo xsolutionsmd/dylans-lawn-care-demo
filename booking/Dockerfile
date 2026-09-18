@@ -15,7 +15,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build CGO_ENABLED=1 go build -trim
 FROM alpine:3.24 AS runtime
 ARG REVISION=local
 LABEL org.opencontainers.image.title="Dylan's Lawn Care booking service"
-LABEL org.opencontainers.image.source="https://github.com/Derek-Sykes/dylans-lawn-care-demo"
+LABEL org.opencontainers.image.source="https://github.com/xsolutionsmd/dylans-lawn-care-demo"
 LABEL org.opencontainers.image.revision=$REVISION
 RUN apk add --no-cache ca-certificates tzdata wget && addgroup -g 10001 booking && adduser -D -u 10001 -G booking booking && mkdir /data && chown booking:booking /data
 COPY --from=compile /booking /usr/local/bin/booking

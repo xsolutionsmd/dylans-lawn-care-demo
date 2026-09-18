@@ -5,14 +5,14 @@ The development website is **https://dev-demo.xsolutionsmd.com**. The owner port
 ## Deploy with the button
 
 1. Push the changes you want to test to **dev**.
-2. Open [Actions → Deploy dev to server](https://github.com/Derek-Sykes/dylans-lawn-care-demo/actions/workflows/deploy-dev.yml).
+2. Open [Actions → Deploy dev to server](https://github.com/xsolutionsmd/dylans-lawn-care-demo/actions/workflows/deploy-dev.yml).
 3. Click **Run workflow**, select **dev**, then click **Run workflow** again.
 4. Wait for the run to succeed. It checks the app, builds both images, publishes this specific deployment request and verifies both images at the dev address.
 
 With GitHub CLI installed and authenticated, the equivalent command is:
 
 ```sh
-gh workflow run deploy-dev.yml --ref dev --repo Derek-Sykes/dylans-lawn-care-demo
+gh workflow run deploy-dev.yml --ref dev --repo xsolutionsmd/dylans-lawn-care-demo
 ```
 
 **Only this manual workflow requests a dev deployment.** There is no push, pull request, schedule, or workflow-completion trigger in it. The `dev-server` GitHub environment accepts only the `dev` branch. Ordinary pushes run checks but leave the server revision unchanged. No main merge is involved.
@@ -24,8 +24,8 @@ The deployed revision is the dev commit selected when you press the button; subs
 | Component | Location |
 |---|---|
 | Image builds and application checks | GitHub Actions runners |
-| Web image | `ghcr.io/derek-sykes/dylans-lawn-care-dev-web` |
-| Booking image | `ghcr.io/derek-sykes/dylans-lawn-care-dev-booking` |
+| Web image | `ghcr.io/xsolutionsmd/dylans-lawn-care-dev-web` |
+| Booking image | `ghcr.io/xsolutionsmd/dylans-lawn-care-dev-booking` |
 | Compose project | `dylan-dev` |
 | Installed runtime | `/opt/dylan-dev` |
 | Private server configuration | `/opt/dylan-dev/runtime.env` (root, mode 600) |
@@ -62,7 +62,7 @@ Initial server installation is an operator task, separate from pressing the depl
 
 From a reviewed checkout on the server, run `sudo bash server/dev/install.sh`. Prepare `/opt/dylan-dev/runtime.env` privately with `BOOTSTRAP_TOKEN`, `GOOGLE_CLIENT_ID`, and `GOOGLE_CLIENT_SECRET`; set ownership to root and permissions to 600. Keep these values out of shell history. The installer preserves an existing runtime file and volume.
 
-The canonical gateway configuration is maintained in the separate `Derek-Sykes/xsolutions-website` repository at `server/gateway/config/Caddyfile`. The dev block routes `/admin/version.json` to the backend version endpoint, `/admin`, `/admin/*`, `/admin.css`, `/admin.js`, `/api/admin/*` and `/oauth/*` to the owner listener, and all remaining requests to the public website. Back up the installed gateway config, validate the complete file, and reload Caddy gracefully. Preserve its certificate volumes and other hostname blocks.
+The canonical gateway configuration is maintained in the separate `xsolutionsmd/xsolutions-website` repository at `server/gateway/config/Caddyfile`. The dev block routes `/admin/version.json` to the backend version endpoint, `/admin`, `/admin/*`, `/admin.css`, `/admin.js`, `/api/admin/*` and `/oauth/*` to the owner listener, and all remaining requests to the public website. Back up the installed gateway config, validate the complete file, and reload Caddy gracefully. Preserve its certificate volumes and other hostname blocks.
 
 Both dev image packages must allow public pulls. The workflow needs the repository's `ORACLE_HOST` variable and a `dev-server` environment restricted to dev; no SSH credential is put into Actions. Once the route and private runtime are ready, enable `sudo systemctl enable --now dylan-dev-update.timer`, then manually dispatch the workflow.
 

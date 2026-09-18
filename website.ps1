@@ -236,7 +236,7 @@ function Ensure-GoogleConfig {
   if ($status.Code -eq 0 -and $operatorStatus.Code -eq 0) { return }
   if ($status.Code -notin @(0,3) -or $operatorStatus.Code -notin @(0,3)) { throw 'Could not check saved Google configuration or operator access. Run the logs command, resolve the local application error, and retry start.' }
   if (-not (Get-Command git -CommandType Application -ErrorAction SilentlyContinue)) {
-    throw 'First Google setup requires Git with access to the private repository Derek-Sykes/xsolutions-booking-private. Install/sign in to Git on this machine and retry start.'
+    throw 'First Google setup requires Git with access to the private repository xsolutionsmd/xsolutions-booking-private. Install/sign in to Git on this machine and retry start.'
   }
   $local = Get-Item -LiteralPath (Join-Path $script:SiteRoot '.local') -Force
   if ($local.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Private setup requires .local to be a regular directory, not a link.' }
@@ -257,9 +257,9 @@ function Ensure-GoogleConfig {
     $repository = Join-Path $temporary 'repo'
     $gitOptions = @('--no-pager','-c','credential.interactive=false','-c','http.sslVerify=true','-c','core.longpaths=true',
       '-c','http.lowSpeedLimit=1','-c','http.lowSpeedTime=30','-c',"core.hooksPath=$empty")
-    $privateURL = 'https://github.com/Derek-Sykes/xsolutions-booking-private.git'
+    $privateURL = 'https://github.com/xsolutionsmd/xsolutions-booking-private.git'
     $destination = Invoke-PrivateProcess git ($gitOptions + @('ls-remote','--get-url',$privateURL))
-    $allowed = @($privateURL,'git@github.com:Derek-Sykes/xsolutions-booking-private.git','ssh://git@github.com/Derek-Sykes/xsolutions-booking-private.git')
+    $allowed = @($privateURL,'git@github.com:xsolutionsmd/xsolutions-booking-private.git','ssh://git@github.com/xsolutionsmd/xsolutions-booking-private.git')
     if ($destination.Code -ne 0 -or $destination.Text.Trim() -cnotin $allowed) {
       throw 'Git rewrites the private setup repository to an unexpected destination. Correct that repository URL rewrite in your Git settings, then retry start.'
     }
@@ -267,7 +267,7 @@ function Ensure-GoogleConfig {
     $clone = Invoke-PrivateProcess git ($gitOptions + @('clone','--quiet','--depth','1','--single-branch','--branch','dev','--no-tags','--no-checkout',"--template=$empty",
       $privateURL,$repository))
     if ($clone.Code -ne 0) {
-      throw 'Could not access private Google setup. Make sure the Git account on this machine has access to Derek-Sykes/xsolutions-booking-private, then retry start. Browser sign-in alone does not sign Git in.'
+      throw 'Could not access private Google setup. Make sure the Git account on this machine has access to xsolutionsmd/xsolutions-booking-private, then retry start. Browser sign-in alone does not sign Git in.'
     }
     if ($status.Code -eq 3) {
     $size = Invoke-PrivateProcess git ($gitOptions + @('-C',$repository,'cat-file','-s','HEAD:google-client.json'))

@@ -90,7 +90,7 @@ try {
   }
   foreach ($launcher in @('website','website.ps1')) {
     $path = Join-Path $seed $launcher
-    $text = [IO.File]::ReadAllText($path).Replace('https://github.com/Derek-Sykes/xsolutions-booking-private.git',$privateFixtureURL)
+    $text = [IO.File]::ReadAllText($path).Replace('https://github.com/xsolutionsmd/xsolutions-booking-private.git',$privateFixtureURL)
     [IO.File]::WriteAllText($path,$text,(New-Object Text.UTF8Encoding($false)))
   }
   Native git @('-C',$seed,'init','--initial-branch=dev')

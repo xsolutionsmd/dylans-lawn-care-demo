@@ -22,8 +22,8 @@ spec.loader.exec_module(module)
 def release(run=2, attempt=1, revision="b"):
     return {"schema": 1, "environment": "dev", "revision": revision * 40,
             "runId": run, "runAttempt": attempt,
-            "webImage": "ghcr.io/derek-sykes/dylans-lawn-care-dev-web@sha256:" + revision * 64,
-            "bookingImage": "ghcr.io/derek-sykes/dylans-lawn-care-dev-booking@sha256:" + revision * 64}
+            "webImage": "ghcr.io/xsolutionsmd/dylans-lawn-care-dev-web@sha256:" + revision * 64,
+            "bookingImage": "ghcr.io/xsolutionsmd/dylans-lawn-care-dev-booking@sha256:" + revision * 64}
 
 
 class FakeUpdater(module.Updater):
@@ -289,6 +289,34 @@ class DeploymentTests(unittest.TestCase):
         path.write_text(" " * 4097)
         with self.assertRaisesRegex(module.DeploymentError, "Oversized"):
             module.manifest(path)
+
+    def test_legacy_namespace_is_only_valid_for_local_recovery(self):
+        legacy = json.loads(json.dumps(release()).replace('ghcr.io/xsolutionsmd/', 'ghcr.io/derek-sykes/'))
+        path = self.base / 'legacy.json'
+        path.write_text(json.dumps(legacy))
+        with self.assertRaises(module.DeploymentError):
+            module.manifest(path)
+        self.assertEqual(module.manifest(path, allow_legacy=True), legacy)
+
+    def test_organization_migration_preserves_legacy_recovery_and_data(self):
+        for fail in ('', 'live'):
+            with self.subTest(fail=fail), tempfile.TemporaryDirectory() as directory:
+                updater = FakeUpdater(Path(directory), release())
+                old = updater.seed()
+                old = json.loads(json.dumps(old).replace('ghcr.io/xsolutionsmd/', 'ghcr.io/derek-sykes/'))
+                (updater.state / 'current.json').write_text(json.dumps(old))
+                updater.fail = fail
+                if fail:
+                    with self.assertRaises(module.DeploymentError):
+                        updater.execute()
+                    self.assertEqual(json.loads((updater.state / 'current.json').read_text()), old)
+                else:
+                    updater.execute()
+                    self.assertEqual(json.loads((updater.state / 'current.json').read_text()), release())
+                    self.assertEqual(json.loads((updater.state / 'previous/previous-current.json').read_text()), old)
+                self.assertEqual(updater.snapshot_data, 'old database, owner and encryption key')
+                if fail:
+                    self.assertEqual(updater.volume, 'old database, owner and encryption key')
 
     def test_image_identity_rejects_wrong_arch_source_and_revision(self):
         updater = self.updater()

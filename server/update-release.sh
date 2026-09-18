@@ -3,7 +3,7 @@
 set -euo pipefail
 umask 077
 [[ $EUID == 0 ]] || { echo 'Run the installed updater as root.' >&2; exit 1; }
-repo=Derek-Sykes/dylans-lawn-care-demo
+repo=xsolutionsmd/dylans-lawn-care-demo
 root=/opt/dylan-demo
 state=/var/lib/dylan-demo-deploy
 mkdir -p "$state"
@@ -70,7 +70,7 @@ assert p.stat().st_size < 4096, 'Oversized release manifest'
 d=json.loads(p.read_text())
 assert isinstance(d,dict) and set(d) == {'revision','image'}, 'Invalid manifest fields'
 assert re.fullmatch(r'[0-9a-f]{40}',d['revision']), 'Invalid revision'
-assert re.fullmatch(r'ghcr.io/derek-sykes/dylans-lawn-care-demo@sha256:[0-9a-f]{64}',d['image']), 'Invalid image'
+assert re.fullmatch(r'ghcr.io/xsolutionsmd/dylans-lawn-care-demo@sha256:[0-9a-f]{64}',d['image']), 'Invalid image'
 print(d['revision']); print(d['image'])
 PY
 )

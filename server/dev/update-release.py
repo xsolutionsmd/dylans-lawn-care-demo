@@ -14,7 +14,7 @@ import sys
 import tempfile
 import time
 
-REPO = "Derek-Sykes/dylans-lawn-care-demo"
+REPO = "xsolutionsmd/dylans-lawn-care-demo"
 ORIGIN = "https://dev-demo.xsolutionsmd.com"
 SOURCE = "https://github.com/" + REPO
 MANIFEST = SOURCE + "/releases/download/dev-server/deployment.json"
@@ -27,7 +27,7 @@ class DeploymentError(Exception):
     pass
 
 
-def manifest(path):
+def manifest(path, *, allow_legacy=False):
     if path.stat().st_size > 4096:
         raise DeploymentError("Oversized deployment manifest.")
     try:
@@ -42,7 +42,10 @@ def manifest(path):
             if type(data[field]) is not int or not 0 < data[field] < 10**18:
                 raise ValueError()
         for field, suffix in (("webImage", "web"), ("bookingImage", "booking")):
-            if not re.fullmatch(r"ghcr.io/derek-sykes/dylans-lawn-care-dev-" + suffix + r"@sha256:[0-9a-f]{64}", data[field]):
+            # Only root-owned recovery receipts may refer to the former owner.
+            # Downloaded release instructions must use the organization namespace.
+            owner = r"(?:xsolutionsmd|derek-sykes)" if allow_legacy else "xsolutionsmd"
+            if not re.fullmatch(r"ghcr.io/" + owner + r"/dylans-lawn-care-dev-" + suffix + r"@sha256:[0-9a-f]{64}", data[field]):
                 raise ValueError()
     except (ValueError, TypeError):
         raise DeploymentError("Invalid deployment manifest.") from None
@@ -269,7 +272,7 @@ class Updater:
         if any(present) and not all(present):
             raise DeploymentError("Incomplete previous dev deployment; preserve its data and repair state first.")
         if all(present):
-            self.old = manifest(self.state / "current.json")
+            self.old = manifest(self.state / "current.json", allow_legacy=True)
             for path in names:
                 shutil.copy2(path, self.work / ("previous-" + path.name))
             return
