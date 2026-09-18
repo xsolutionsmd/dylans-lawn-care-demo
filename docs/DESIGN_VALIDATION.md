@@ -1,5 +1,31 @@
 # Dev redesign validation
 
+## September 18 broader photography and gallery refinement
+
+The signed-in Facebook review covered the 80-photo grid, cover album and timeline
+back to its June 26, 2018 entry. [Photo sources](PHOTO_SOURCES.md) distinguish older
+work from recent reposts. Eight selected photographs replace the repetitive four-photo
+reel. A lawn-led hero, consistent gallery framing and native full-image dialog retain
+the existing design system, booking behavior and motion/pause preferences.
+
+- 48 date/card containment cases still pass in Chromium and WebKit.
+- Both engines pass eight-photo count, descriptive gallery announcements, modal
+  previous/next and keyboard arrows, focus containment, Escape/focus restoration,
+  and dialog bounds at 320, 390 and 1440px. Reduced-motion state passes.
+- Desktop design inspected in the interactive browser; mobile modal screenshots
+  inspected from the isolated browser suite. Browser emulation is not a physical
+  iPhone test. The in-app capture scaling differed from DOM bounds during mobile
+  inspection, so the isolated engine captures were used to verify actual framing.
+- Public booking suite: 19 passed. Container checks: 29 public files, revision,
+  headers and private-file exclusions passed. No live appointments/messages sent.
+- Existing animation visibility gates remain; opening the photo viewer also pauses
+  the hero sequence. Responsive sources, lazy gallery images and local assets avoid
+  third-party media dependencies. No measured device FPS/speed claim is made.
+
+The earlier correction was released to dev as `f9b0a808c9076e5df5c1063112a8857b20baedfa`
+through run `35403914125`, with all 19 files verified over HTTPS. This additional
+photo refinement follows the same dev-only/manual-release contract below.
+
 ## September 18 correction after phone feedback
 
 The earlier Chromium review missed a date control overflowing its own card on

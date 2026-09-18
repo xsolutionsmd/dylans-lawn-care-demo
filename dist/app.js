@@ -29,9 +29,10 @@
   let scene = 0;
   let heroVisible = false;
   let sceneTimer;
+  let photoOpen = false;
   function cycleHero() {
     clearTimeout(sceneTimer);
-    const off = paused || reduced.matches || document.hidden || !heroVisible;
+    const off = paused || reduced.matches || document.hidden || !heroVisible || photoOpen;
     hero.classList.toggle('hero-film-paused', off);
     if (off) return;
     sceneTimer = setTimeout(() => {
@@ -69,7 +70,7 @@
     else {
       observer = new IntersectionObserver(entries => entries.forEach(entry => {
         // Replay a gentle entrance when revisiting a section; never bind a page scroll loop.
-        entry.target.classList.toggle('is-visible', entry.isIntersecting);
+        entry.target.classList.toggle('is-visible', entry.isIntersecting || entry.target.contains(document.activeElement));
       }), { threshold: 0.08 });
       reveals.forEach(el => observer.observe(el));
     }
@@ -97,7 +98,7 @@
   const go = step => {
     const target = Math.max(0, Math.min(cards.length - 1, index + step));
     track.scrollTo({left:position(cards[target]), behavior: paused || reduced.matches ? 'auto' : 'smooth'});
-    announce.textContent = 'Project ' + (target + 1) + ' of 4: ' + cards[target].querySelector('h3').textContent;
+    announce.textContent = cards[target].querySelector('h3').textContent;
   };
   prev.addEventListener('click', () => go(-1));
   next.addEventListener('click', () => go(1));
@@ -110,4 +111,64 @@
   if ('ResizeObserver' in window) new ResizeObserver(update).observe(track);
   document.querySelector('.gallery-controls').hidden = false;
   update();
+
+  // Native modal semantics provide focus containment and Escape handling.
+  // Without dialog support or JavaScript, each photograph remains a direct link.
+  const dialog = document.querySelector('.photo-dialog');
+  if (dialog && typeof dialog.showModal === 'function') {
+    const detail = dialog.querySelector('.photo-detail img');
+    const title = dialog.querySelector('#photo-title');
+    const category = dialog.querySelector('#photo-category');
+    const status = dialog.querySelector('.photo-status');
+    const previous = dialog.querySelector('.photo-prev');
+    const following = dialog.querySelector('.photo-next');
+    let activePhoto = 0;
+    let opener;
+    const showPhoto = target => {
+      activePhoto = Math.max(0, Math.min(cards.length - 1, target));
+      const card = cards[activePhoto];
+      const source = card.querySelector('img');
+      detail.src = card.querySelector('.photo-open').href;
+      detail.alt = source.alt;
+      detail.width = source.width;
+      detail.height = source.height;
+      title.textContent = card.querySelector('h3').textContent;
+      category.textContent = card.querySelector('figcaption>span').textContent;
+      status.textContent = title.textContent;
+      previous.disabled = activePhoto === 0;
+      following.disabled = activePhoto === cards.length - 1;
+    };
+    cards.forEach((card, i) => card.querySelector('.photo-open').addEventListener('click', event => {
+      if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      opener = event.currentTarget;
+      showPhoto(i);
+      photoOpen = true;
+      cycleHero();
+      dialog.showModal();
+      document.documentElement.classList.add('photo-viewing');
+    }));
+    dialog.querySelector('.photo-close').addEventListener('click', () => dialog.close());
+    previous.addEventListener('click', () => showPhoto(activePhoto - 1));
+    following.addEventListener('click', () => showPhoto(activePhoto + 1));
+    dialog.addEventListener('keydown', event => {
+      if (event.key === 'Tab') {
+        const controls = [...dialog.querySelectorAll('button:not(:disabled)')];
+        const first = controls[0], last = controls[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      }
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        event.preventDefault();
+        showPhoto(activePhoto + (event.key === 'ArrowRight' ? 1 : -1));
+      }
+    });
+    dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
+    dialog.addEventListener('close', () => {
+      document.documentElement.classList.remove('photo-viewing');
+      photoOpen = false;
+      cycleHero();
+      opener?.focus({preventScroll:true});
+    });
+  }
 })();
