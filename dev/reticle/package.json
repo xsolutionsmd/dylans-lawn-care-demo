@@ -1,0 +1,13 @@
+{
+  "name": "local-reticle-verification",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": { "preview": "node run.mjs preview", "mcp": "node run.mjs mcp", "test": "node --test proxy.test.mjs" },
+  "dependencies": {
+    "@reticlehq/browser": "3.1.0",
+    "@reticlehq/server": "3.1.0",
+    "esbuild": "0.28.2"
+  }
+}

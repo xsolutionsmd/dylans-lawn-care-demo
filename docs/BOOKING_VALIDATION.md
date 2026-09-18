@@ -140,3 +140,28 @@ The September 10 service-booking update replaces the earlier estimate/callback w
 After real sign-in and a synchronized request, `docker stats --no-stream` reported approximately 9.5 MiB for the booking process and 16.5 MiB for Caddy (about 26 MiB combined). The small test database was 60 KiB after checkpoint, with a 32 KiB SQLite shared-memory file. These are observations from a light local workload, not a capacity guarantee, and exclude Docker Desktop, image builds and build caches.
 
 The active static Dockerfile, production Compose file, server updater and main-only release workflow remain unchanged. The future booking production template has not been deployed.
+
+## September 18, 2026: optional Reticle local verification
+
+Source/tooling revision: `5966e6f88c0a400a4e46a3419d40191d944fe11b`. Windows host Node25.9.0, Docker Desktop
+Linux engine, Reticle server/browser3.1.0 and esbuild0.28.2 from package-lock.
+
+- `npm --prefix dev/reticle ci --ignore-scripts --no-fund --no-audit` succeeded.
+- `node --test dev/reticle/proxy.test.mjs`: 3 tests passed: local-only target,
+  foreign Host/Origin/WebSocket refusal, missing SDK token503, HTML-only injection,
+  original CSP retained and same-origin cookie/CSRF translation.
+- Real MCP initialization advertised nine tools; sessions were selected by exact
+  local preview URL. Positive presence/route checks and a deliberately absent
+  sentinel returning `verified:no` distinguish success from false confidence.
+- A temporary Alpine Docker build copied the real ignored build context and
+  asserted `dev/reticle`, `.reticle` and `.codex` were absent: passed.
+- `git diff --check` passed. Public templates, application source and release
+  workflows are unchanged. No main promotion, image release or live deployment.
+
+Dylan previews: local public4178 through4488 and owner4179 through4489. Browser navigation to book.html reconnected, heading presence passed, and Reticle observed the owner session API returning200. No booking, email, Calendar mutation or external sign-in was performed. Reticle role/name whitespace differs on some styled headings; inspect the actual tool output before choosing predicates.
+
+Limits: browser traces give partial coverage; no registered application stores,
+source-line stamping, response-body capture, whole-app test rerun or measured
+token savings. Full navigation can miss requests even though SDK reconnects.
+This is a tooling acceptance check, not proof of every application behavior.
+Use [the guide](RETICLE.md) to reproduce the development setup.
