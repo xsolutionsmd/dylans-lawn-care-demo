@@ -12,7 +12,7 @@ import tempfile
 
 NEW = "a" * 40
 OLD = "b" * 40
-IMAGE = "ghcr.io/derek-sykes/dylans-lawn-care-demo@sha256:" + "c" * 64
+IMAGE = "ghcr.io/xsolutionsmd/dylans-lawn-care-demo@sha256:" + "c" * 64
 SOURCE = Path(__file__).resolve().parents[1] / "server/update-release.sh"
 
 STUB = r'''#!/usr/bin/env python3
@@ -21,7 +21,7 @@ p = pathlib.Path(os.environ["TEST_CASE"])
 mode = os.environ["TEST_MODE"]
 command, args = pathlib.Path(sys.argv[0]).name, sys.argv[1:]
 revision, old = "a" * 40, "b" * 40
-image = "ghcr.io/derek-sykes/dylans-lawn-care-demo@sha256:" + "c" * 64
+image = "ghcr.io/xsolutionsmd/dylans-lawn-care-demo@sha256:" + "c" * 64
 def once(name):
     marker = p / name
     if marker.exists(): return False
@@ -34,7 +34,7 @@ elif command == "sleep":
 elif command == "docker":
     if args[:2] == ["image", "inspect"]:
         fmt = args[-1]
-        print("arm64" if "Architecture" in fmt else revision if "revision" in fmt else "https://github.com/Derek-Sykes/dylans-lawn-care-demo")
+        print("arm64" if "Architecture" in fmt else revision if "revision" in fmt else "https://github.com/xsolutionsmd/dylans-lawn-care-demo")
     elif args[0] == "port":
         print("127.0.0.1:12345")
     elif args[0] == "inspect":

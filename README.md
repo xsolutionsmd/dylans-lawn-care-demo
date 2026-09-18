@@ -37,10 +37,10 @@ See [animation performance](docs/PERFORMANCE.md) for the scroll cache, carousel 
 
 The static website follows **updates → main**. Create `updates` from current `main`, make and test focused changes there, and open a PR into `main` when a release is authorized. The separate **dev** branch contains the booking/admin system; do not merge it to release static-site updates. On a second computer, clone **updates** to work on this version, start Docker Desktop and run `start.bat`. Use `update.bat` thereafter.
 
-The public repository is [Derek-Sykes/dylans-lawn-care-demo](https://github.com/Derek-Sykes/dylans-lawn-care-demo), with `dev` as its default branch. Cloning does not require a GitHub sign-in; pushing changes requires write access. Clone once:
+The public repository is [xsolutionsmd/dylans-lawn-care-demo](https://github.com/xsolutionsmd/dylans-lawn-care-demo), with `dev` as its default branch. Cloning does not require a GitHub sign-in; pushing changes requires write access. Clone once:
 
 ```powershell
-git clone --branch updates https://github.com/Derek-Sykes/dylans-lawn-care-demo.git
+git clone --branch updates https://github.com/xsolutionsmd/dylans-lawn-care-demo.git
 cd dylans-lawn-care-demo
 .\start.bat
 ```
