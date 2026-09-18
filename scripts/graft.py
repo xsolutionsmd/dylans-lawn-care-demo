@@ -44,6 +44,7 @@ def identity(ref, feature=False):
 TEXT_EXTENSIONS = {'.js', '.cjs', '.mjs', '.jsx', '.ts', '.tsx', '.go', '.py', '.sh', '.ps1', '.bat', '.html', '.css', '.md', '.json', '.yaml', '.yml', '.toml', '.txt', '.sql', '.mod', '.sum', '.xml', '.svg', '.service', '.timer'}
 TEXT_NAMES = {'Dockerfile', 'Caddyfile', 'Caddyfile.local', 'website', '.dockerignore', '.gitignore', '.gitattributes', 'LICENSE', 'Makefile'}
 PRIVATE_DIRS = {'node_modules', 'vendor', '.graft-context', '.git', '.local', '.openai', '.codex', '.claude', 'backups', 'private', 'data', 'runtime', 'logs', 'models', 'recordings', 'transcripts', '__pycache__'}
+MAX_FILE_BYTES = 1_000_000
 
 def eligible(p):
     # Tracked does not mean safe: explicitly keep runtime/credentials out too.
@@ -51,9 +52,25 @@ def eligible(p):
         return False
     if any(part.startswith('.') and part not in ('.github', '.devcontainer') and part not in TEXT_NAMES for part in p.parts):
         return False
-    if p.name.lower() in ('google-client.json', 'operator-access.json', 'credentials.json', 'secrets.json', 'token.json', 'tokens.json'):
+    credential = p.stem.lower().replace('_', '-').replace('.', '-')
+    if credential in ('google-client', 'operator-access', 'credential', 'credentials', 'secret', 'secrets', 'token', 'tokens', 'oauth-token', 'oauth-tokens', 'client-secret', 'client-secrets', 'service-account', 'service-account-key') and p.suffix.lower() in ('.json', '.yaml', '.yml', '.toml', '.txt'):
         return False
     return p.suffix.lower() in TEXT_EXTENSIONS or p.name in TEXT_NAMES or p.name.startswith(('Dockerfile.', 'Caddyfile.'))
+
+def read_source(source):
+    if not source.is_file() or source.is_symlink() or source.resolve() != source.absolute() or not source.resolve().is_relative_to(ROOT):
+        return None
+    if source.stat().st_size > MAX_FILE_BYTES:
+        return None
+    with source.open('rb') as stream:
+        data = stream.read(MAX_FILE_BYTES + 1)
+    if len(data) > MAX_FILE_BYTES or b'\0' in data:
+        return None
+    try:
+        data.decode('utf-8-sig')
+    except UnicodeDecodeError:
+        return None
+    return data
 
 def inventory(config):
     paths = []
@@ -69,14 +86,8 @@ def inventory(config):
         if not eligible(p):
             continue
         source = ROOT / p
-        if source.is_file() and source.resolve().is_relative_to(ROOT) and not source.is_symlink():
-            data = source.read_bytes()
-            try:
-                data.decode('utf-8-sig')
-                if b'\0' not in data and len(data) <= 1_000_000:
-                    paths.append(name)
-            except UnicodeDecodeError:
-                pass
+        if read_source(source) is not None:
+            paths.append(name)
     return sorted(paths)
 
 def snapshot(config, info):
@@ -102,7 +113,9 @@ def snapshot(config, info):
             path.unlink()
     hashes = {}
     for name in names:
-        data = (ROOT / name).read_bytes()
+        data = read_source(ROOT / name)
+        if data is None:
+            raise ValueError('Source changed or became ineligible during snapshot; retry')
         dest = src / name
         dest.parent.mkdir(parents=True, exist_ok=True)
         if not dest.exists() or dest.read_bytes() != data:
@@ -117,7 +130,12 @@ def verify_snapshot(config, info, cache):
     if current_config != config or any(current[k] != info[k] for k in ('revision', 'branch')):
         raise ValueError('Checkout identity changed while reading source; retry')
     stamp = json.loads((cache / 'identity.json').read_text())
-    actual = {name: hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in inventory(config)}
+    actual = {}
+    for name in inventory(config):
+        data = read_source(ROOT/name)
+        if data is None:
+            raise ValueError('Source changed while validating snapshot; retry')
+        actual[name] = hashlib.sha256(data).hexdigest()
     if actual != stamp['files']:
         raise ValueError('Source changed while building context; retry')
 

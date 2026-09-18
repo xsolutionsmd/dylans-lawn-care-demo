@@ -101,7 +101,7 @@ class ContextTests(unittest.TestCase):
     def test_whole_repository_text_and_infrastructure_coverage(self):
         self.write('tools/graft/context.json', json.dumps({'repository':'xsolutionsmd/test-context','sourcePatterns':['**']}))
         wanted=['Dockerfile','Dockerfile.dev','compose.yaml','.github/workflows/check.yml','.devcontainer/devcontainer.json','tools/graft/Dockerfile','server/install.sh','website.ps1','docs/OPERATIONS.md','app/index.html','app/style.css','Caddyfile']
-        excluded=['.env','booking/config/google-client.json','private/secret.js','data/customer.json','runtime/customer.json','logs/secret.json','models/data.json','node_modules/index.js','image.png','graft/cache.json']
+        excluded=['.env','booking/config/google-client.json','oauth_tokens.json','client_secret.json','service-account.json','private/secret.js','data/customer.json','runtime/customer.json','logs/secret.json','models/data.json','node_modules/index.js','image.png','graft/cache.json']
         for name in wanted+excluded: self.write(name, 'whole-repository-probe')
         self.git('add', '-f', *wanted, *excluded)
         cfg, info=graft.identity('dev')
@@ -120,5 +120,22 @@ class ContextTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Feature context'): graft.identity('main', True)
         self.git('checkout', '-q', 'main')
         with self.assertRaisesRegex(ValueError, 'Feature context'): graft.identity('dev', True)
+    def test_parent_symlink_cannot_expose_runtime(self):
+        self.write('tools/graft/context.json', json.dumps({'repository':'xsolutionsmd/test-context','sourcePatterns':['**']}))
+        self.write('alias/main.js', 'tracked placeholder')
+        self.write('runtime/main.js', 'private runtime')
+        self.git('add', 'alias/main.js')
+        (self.root/'alias/main.js').unlink()
+        (self.root/'alias').rmdir()
+        try: (self.root/'alias').symlink_to(self.root/'runtime', target_is_directory=True)
+        except OSError: self.skipTest('Directory symlinks require platform permission')
+        cfg, _=graft.identity('dev')
+        self.assertNotIn('alias/main.js', graft.inventory(cfg))
+    def test_oversized_and_binary_text_names_excluded(self):
+        (self.root/'app/large.js').write_bytes(b'x'*(graft.MAX_FILE_BYTES+1))
+        (self.root/'app/binary.js').write_bytes(b'a\x00b')
+        self.git('add', 'app/large.js', 'app/binary.js')
+        cfg, _=graft.identity('dev')
+        self.assertEqual(graft.inventory(cfg), ['app/main.js'])
 
 if __name__ == '__main__': unittest.main()
