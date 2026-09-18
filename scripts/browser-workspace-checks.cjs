@@ -104,12 +104,16 @@ async function run(page,base,name) {
         for(const row of document.querySelectorAll('.time-window')) {
           if(!row.checkVisibility()) continue;
           const parts=[...row.children].map(el=>el.getBoundingClientRect());
-          for(let i=1;i<parts.length;i++) if(parts[i].left<parts[i-1].right-1) issues.push('time row overlap');
+          for(let i=1;i<parts.length;i++) for(let j=0;j<i;j++) {
+            if(Math.min(parts[i].right,parts[j].right)>Math.max(parts[i].left,parts[j].left)+1&&Math.min(parts[i].bottom,parts[j].bottom)>Math.max(parts[i].top,parts[j].top)+1) issues.push('time row overlap');
+          }
+          for(const input of row.querySelectorAll('input[type=time]')) if(input.getBoundingClientRect().width<110) issues.push('native time editor too narrow for AM/PM');
         }
         return issues;
       });
       assert.deepEqual(issues,[],`${name} admin ${panel} ${width}`);
       if([320,390,1440].includes(width)&&['bookings','availability','calendar'].includes(panel)) await screenshot(page,name,`admin-${panel}-${width}`);
+      if(process.env.DESIGN_SCREENSHOTS&&panel==='availability'&&[320,390].includes(width)) await page.locator('.weekly-day[data-weekday="1"]').screenshot({path:path.join(process.env.DESIGN_SCREENSHOTS,`${name}-time-row-${width}.png`)});
     }
   }
   await page.setViewportSize({width:390,height:844});
