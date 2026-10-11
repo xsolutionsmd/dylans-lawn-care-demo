@@ -18,6 +18,8 @@ import (
 type googleFixture struct {
 	mu                                                           sync.Mutex
 	sub, email, scope, tokenError                                string
+	calendarID                                                   string
+	calendarStatus, createStatus                                 int
 	verified, calendarMissing, busyError, loseInsert, loseDelete bool
 	tokenCalls, refreshCalls, creates, inserts, deletes          int
 	lastVerifier, lastSecret                                     string
@@ -27,7 +29,7 @@ type googleFixture struct {
 
 func mockGoogle(t *testing.T, a *App) *googleFixture {
 	t.Helper()
-	f := &googleFixture{sub: "owner-sub", email: "owner@example.com", scope: googleScopes, verified: true, events: map[string]map[string]any{}}
+	f := &googleFixture{sub: "owner-sub", email: "owner@example.com", scope: googleScopes, calendarID: "fixture-booking-calendar", verified: true, events: map[string]map[string]any{}}
 	f.server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		f.mu.Lock()
 		defer f.mu.Unlock()
@@ -51,12 +53,23 @@ func mockGoogle(t *testing.T, a *App) *googleFixture {
 			writeJSON(w, 200, map[string]any{"sub": f.sub, "email": f.email, "email_verified": f.verified})
 		case r.URL.Path == "/calendar/v3/calendars" && r.Method == "POST":
 			f.creates++
-			writeJSON(w, 200, map[string]string{"id": "fixture-booking-calendar"})
-		case r.URL.Path == "/calendar/v3/calendars/fixture-booking-calendar" && r.Method == "GET":
+			if f.createStatus != 0 {
+				w.WriteHeader(f.createStatus)
+				return
+			}
 			if f.calendarMissing {
+				f.calendarID = "fixture-replacement-calendar"
+				f.calendarMissing = false
+				f.events = map[string]map[string]any{}
+			}
+			writeJSON(w, 200, map[string]string{"id": f.calendarID})
+		case strings.HasPrefix(r.URL.Path, "/calendar/v3/calendars/") && !strings.Contains(r.URL.Path, "/events") && r.Method == "GET":
+			if f.calendarStatus != 0 {
+				w.WriteHeader(f.calendarStatus)
+			} else if f.calendarMissing || r.URL.Path != "/calendar/v3/calendars/"+f.calendarID {
 				w.WriteHeader(404)
 			} else {
-				writeJSON(w, 200, map[string]string{"id": "fixture-booking-calendar"})
+				writeJSON(w, 200, map[string]string{"id": f.calendarID})
 			}
 		case r.URL.Path == "/calendar/v3/freeBusy":
 			var body struct {
@@ -65,21 +78,29 @@ func mockGoogle(t *testing.T, a *App) *googleFixture {
 				} `json:"items"`
 			}
 			_ = json.NewDecoder(r.Body).Decode(&body)
-			if len(body.Items) != 2 || body.Items[0].ID != "primary" || body.Items[1].ID != "fixture-booking-calendar" {
+			if len(body.Items) != 2 || body.Items[0].ID != "primary" || body.Items[1].ID != f.calendarID {
 				t.Error("freebusy did not cover primary and booking calendars")
 			}
 			if f.busyError {
 				writeJSON(w, 200, map[string]any{"calendars": map[string]any{"primary": map[string]any{"errors": []map[string]string{{"reason": "notFound"}}}}})
 				return
 			}
-			writeJSON(w, 200, map[string]any{"calendars": map[string]any{"primary": map[string]any{"busy": []any{}}, "fixture-booking-calendar": map[string]any{"busy": []any{}}}})
-		case r.URL.Path == "/calendar/v3/calendars/fixture-booking-calendar/events" && r.Method == "GET":
+			writeJSON(w, 200, map[string]any{"calendars": map[string]any{"primary": map[string]any{"busy": []any{}}, f.calendarID: map[string]any{"busy": []any{}}}})
+		case r.URL.Path == "/calendar/v3/calendars/"+f.calendarID+"/events" && r.Method == "GET":
+			if f.calendarMissing {
+				w.WriteHeader(404)
+				return
+			}
 			events := []map[string]any{}
 			for _, event := range f.events {
 				events = append(events, event)
 			}
 			writeJSON(w, 200, map[string]any{"items": events, "nextSyncToken": "fixture-sync-token", "timeZone": "America/New_York"})
-		case strings.HasPrefix(r.URL.Path, "/calendar/v3/calendars/fixture-booking-calendar/events"):
+		case strings.HasPrefix(r.URL.Path, "/calendar/v3/calendars/"+f.calendarID+"/events"):
+			if f.calendarMissing {
+				w.WriteHeader(404)
+				return
+			}
 			if r.Method == "POST" {
 				var event map[string]any
 				_ = json.NewDecoder(r.Body).Decode(&event)
@@ -292,8 +313,8 @@ func TestOAuthPermissionDenialRefreshAndConnectionDiagnostics(t *testing.T) {
 		t.Fatal("recovered Calendar did not clear diagnostic")
 	}
 	f.calendarMissing = true
-	if err := a.google.connect(context.Background(), "code", randomToken(48), a.cfg.AdminOrigin+"/oauth/callback"); err == nil || f.creates != 1 {
-		t.Fatal("missing calendar was silently replaced")
+	if err := a.google.connect(context.Background(), "code", randomToken(48), a.cfg.AdminOrigin+"/oauth/callback"); err != nil || f.creates != 2 {
+		t.Fatal("reconnecting did not replace the missing booking calendar")
 	}
 }
 func TestGoogleStableEventRetriesAndDisconnect(t *testing.T) {

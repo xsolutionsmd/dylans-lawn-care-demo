@@ -120,7 +120,7 @@ func TestThreeAccountsShareOneWorkspaceAndPreserveCalendar(t *testing.T) {
 	if !bytes.Equal(beforeOwner, afterOwner) || !bytes.Equal(beforeTokens, afterTokens) {
 		t.Fatal("sharing rewrote Calendar identity or credentials")
 	}
-	other, err := newApp(a.cfg)
+	other, err := reopenTestApp(a)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,7 +169,7 @@ func TestMemberRemovalInvalidatesSessionsWithoutResurrection(t *testing.T) {
 	if w := request(a, true, "DELETE", "/api/admin/members/"+id, nil, op, csrf, a.cfg.AdminOrigin); w.Code != 204 {
 		t.Fatal("second removal failed")
 	}
-	other, err := newApp(a.cfg)
+	other, err := reopenTestApp(a)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -229,7 +229,7 @@ func TestInvitationOnlyLegacyOwnerMigratesWithoutClaimingCalendar(t *testing.T) 
 	if err := a.store.putSecret("owner", legacy); err != nil {
 		t.Fatal(err)
 	}
-	other, err := newApp(a.cfg)
+	other, err := reopenTestApp(a)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -244,7 +244,7 @@ func TestInvitationOnlyLegacyOwnerMigratesWithoutClaimingCalendar(t *testing.T) 
 	if w := request(other, true, "DELETE", "/api/admin/members/"+id, nil, op, csrf, other.cfg.AdminOrigin); w.Code != 204 {
 		t.Fatal("unconnected migrated member cannot be removed")
 	}
-	third, err := newApp(a.cfg)
+	third, err := reopenTestApp(a)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -262,7 +262,7 @@ func TestLegacyMemberCookieCannotResurrectAfterRejoinAndCalendarConnection(t *te
 		t.Fatal(err)
 	}
 	oldCookie, _ := testIdentitySession(t, a, legacy)
-	other, err := newApp(a.cfg)
+	other, err := reopenTestApp(a)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -304,7 +304,7 @@ func TestSharedWorkspaceUpgradePreservesExistingCalendarOwnerSession(t *testing.
 	if _, err := a.store.db.Exec("DROP TABLE workspace_members"); err != nil {
 		t.Fatal(err)
 	}
-	other, err := newApp(a.cfg)
+	other, err := reopenTestApp(a)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -369,7 +369,7 @@ func TestExplicitCalendarConnectionChoosesMemberAndProtectsThem(t *testing.T) {
 	if err = a.google.disconnect(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	other, err := newApp(a.cfg)
+	other, err := reopenTestApp(a)
 	if err != nil {
 		t.Fatal(err)
 	}
