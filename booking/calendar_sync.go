@@ -73,13 +73,23 @@ func (g *Google) refresh(ctx context.Context) error {
 	}
 	// Google expires sync tokens. Discard only the token in memory, and replace
 	// the durable cursor only after the entire replacement snapshot is applied.
-	for attempt := 0; attempt < 2; attempt++ {
+	recovered := false
+	for attempt := 0; attempt < 3; attempt++ {
 		events, next, expired, err := g.readCalendarPages(ctx, cursor)
 		if expired && cursor.Token != "" {
 			cursor.Token = ""
 			continue
 		}
 		if err != nil {
+			if errors.Is(err, errCalendarMissing) && !recovered {
+				owner, recoveryErr := g.recoverMissingCalendar(ctx)
+				if recoveryErr != nil {
+					return recoveryErr
+				}
+				cursor = calendarCursor{CalendarID: owner.CalendarID}
+				recovered = true
+				continue
+			}
 			return err
 		}
 		return g.store.applyCalendarSnapshot(ctx, events, next, cursor.Token == "", g.now())
@@ -101,6 +111,9 @@ func (g *Google) readCalendarPages(ctx context.Context, cursor calendarCursor) (
 		var out calendarPage
 		status, err := g.request(ctx, "GET", "/calendars/"+url.PathEscape(cursor.CalendarID)+"/events?"+query.Encode(), nil, &out)
 		if err != nil {
+			if status == 404 || status == 410 {
+				err = errCalendarMissing
+			}
 			return nil, cursor, status == 410, err
 		}
 		if out.TimeZone != "" {

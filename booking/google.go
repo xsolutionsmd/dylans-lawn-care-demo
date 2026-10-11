@@ -274,28 +274,9 @@ func (g *Google) connectAuthorized(ctx context.Context, code, verifier, redirect
 		return errors.New("offline access was not granted")
 	}
 	tokens := GoogleTokens{reply.AccessToken, reply.RefreshToken, g.now().Add(time.Duration(reply.ExpiresIn) * time.Second), reply.Scope}
-	if owner.CalendarID == "" {
-		settings, e := g.store.settings()
-		if e != nil {
-			return e
-		}
-		var created struct {
-			ID string `json:"id"`
-		}
-		_, e = g.authorizedRequest(ctx, "POST", "/calendars", map[string]string{"summary": settings.BusinessName + " bookings", "timeZone": settings.TimeZone}, &created, reply.AccessToken)
-		if e != nil || created.ID == "" || len(created.ID) > 1024 {
-			return errGoogle
-		}
-		owner.CalendarID = created.ID
-	} else {
-		var existing struct {
-			ID string `json:"id"`
-		}
-		_, e := g.authorizedRequest(ctx, "GET", "/calendars/"+url.PathEscape(owner.CalendarID), nil, &existing, reply.AccessToken)
-		if e != nil || existing.ID != owner.CalendarID {
-			_ = g.store.putJSON("google_error", "The connected booking calendar is unavailable. Restore its access before reconnecting; existing appointments have been kept.")
-			return errGoogle
-		}
+	owner, replaced, err := g.ensureBookingCalendar(ctx, owner, reply.AccessToken)
+	if err != nil {
+		return err
 	}
 	owner.Sub = info.Sub
 	owner.Email = info.Email
@@ -313,6 +294,11 @@ func (g *Google) connectAuthorized(ctx context.Context, code, verifier, redirect
 	if err = g.store.writeTxSecret(tx, "google_tokens", tokens); err != nil {
 		return err
 	}
+	if replaced {
+		if err = g.resetCalendarSyncTx(tx); err != nil {
+			return err
+		}
+	}
 	if withMail {
 		grant := mailGrant{Subject: owner.Sub, Email: owner.Email, Tokens: tokens}
 		if err = g.store.writeTxSecret(tx, "google_mail_tokens", grant); err != nil {
@@ -328,6 +314,8 @@ func (g *Google) connectAuthorized(ctx context.Context, code, verifier, redirect
 	if err = tx.Commit(); err != nil {
 		return err
 	}
+	g.lastRefresh = time.Time{}
+	g.lastRefreshErr = nil
 	return g.store.putJSON("google_error", "")
 }
 func (g *Google) accessToken(ctx context.Context) (string, error) {
