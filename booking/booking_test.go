@@ -81,6 +81,16 @@ func testInput(key string) BookingInput {
 	return BookingInput{ServiceID: "lawn-care", Start: "2026-09-14T13:00:00Z", Name: "Sample Customer", Email: "sample@example.com", Phone: "410-555-0123", Address: "Example property", Notes: "Mow the front and back lawn", IdempotencyKey: key}
 }
 
+// Reopening a fixture must keep its clock: its persisted session timestamps
+// belong to that clock, not the wall time on the machine running the tests.
+func reopenTestApp(a *App) (*App, error) {
+	other, err := newApp(a.cfg)
+	if err == nil {
+		other.now = a.now
+	}
+	return other, err
+}
+
 func TestConcurrentBookingAndIdempotentRetry(t *testing.T) {
 	a, _ := testApp(t)
 	const count = 16
@@ -145,7 +155,7 @@ func TestConcurrentBookingAndIdempotentRetry(t *testing.T) {
 
 func TestIndependentConnectionsCannotOverlap(t *testing.T) {
 	a, f := testApp(t)
-	other, err := newApp(a.cfg)
+	other, err := reopenTestApp(a)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -224,7 +234,7 @@ func TestCalendarFailureRetryCancelAndPersistence(t *testing.T) {
 	if err != nil {
 		t.Fatal("successfully cancelled slot stayed reserved")
 	}
-	other, err := newApp(a.cfg)
+	other, err := reopenTestApp(a)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -363,7 +373,7 @@ func TestHTTPIsolationCSRFHostAndPersistentSession(t *testing.T) {
 	if w.Code != 421 {
 		t.Fatal("host rebinding accepted")
 	}
-	other, e := newApp(a.cfg)
+	other, e := reopenTestApp(a)
 	if e != nil {
 		t.Fatal(e)
 	}
